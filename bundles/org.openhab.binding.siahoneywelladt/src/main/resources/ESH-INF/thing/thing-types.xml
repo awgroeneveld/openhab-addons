@@ -4,32 +4,22 @@
 	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
 	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
-	<!-- Sample Thing Type -->
-<!--	<thing-type id="sample">-->
-<!--		<label>SiaHoneywellAdt Binding Thing</label>-->
-<!--		<description>Sample thing for SiaHoneywellAdt Binding</description>-->
 
-<!--		<channels>-->
-<!--			<channel id="channel1" typeId="sample-channel" />-->
-<!--		</channels>-->
-
-<!--		<config-description>-->
-<!--			<parameter name="config1" type="text" required="true">-->
-<!--				<label>Sample Parameter</label>-->
-<!--				<description>This is a sample text configuration parameter</description>-->
-<!--			</parameter>-->
-<!--		</config-description>-->
-
-<!--	</thing-type>-->
 
 	<bridge-type id="serialbridge">
 		<label>Honeywell/ADT Serial Bridge</label>
 		<description>Serial Bridge</description>
 		<properties>
-			<property name="vendor">Nu Tech Software Solutions</property>
+			<property name="vendor">Art Groeneveld</property>
 		</properties>
 
 		<config-description>
+			<parameter name="password" type="text" required="false">
+				<context>password</context>
+				<label>Password</label>
+				<description>The Password to login to the Remote RS232 interface.</description>
+				<default>user</default>
+			</parameter>
 			<parameter name="serialPort" type="text" required="true">
 				<label>Serial Or USB Port</label>
 				<context>serial-port</context>
@@ -38,47 +28,231 @@
 			</parameter>
 			<parameter name="bitrate" type="integer">
 				<label>Bitrate</label>
-				<default>115200</default>
-				<description>Speed of the serial connection</description>
+				<default>57600</default>
+				<description>Speed of the serial connection, remember to set in panel.</description>
 			</parameter>
 			<parameter name="discovery" type="boolean">
 				<label>Enable Discovery</label>
-				<description>Enable automatic discovery of zones and RF zones</description>
+				<description>Enable automatic discovery of zones</description>
 				<default>false</default>
+			</parameter>
+			<parameter name="dipSwitch8" type="boolean">
+				<label>Dip Switch 8</label>
+				<description>Dip Swicth setting on Galaxy Board</description>
+				<default>false</default>
+			</parameter>
+			<parameter name="pollPeriod" type="integer" required="false" min="1" max="15">
+				<label>Poll Period</label>
+				<description>The Poll Period (minutes).</description>
+				<default>1</default>
 			</parameter>
 		</config-description>
 	</bridge-type>
 
-	<!-- Zone Thing Type -->
+	<!-- virtual controller -->
+
+	<thing-type id="partition">
+		<supported-bridge-type-refs>
+			<bridge-type-ref id="serialbridge"/>
+		</supported-bridge-type-refs>
+
+		<label>Area</label>
+		<description>Represents a controllable area within a Honeywell/DSC Alarm System.</description>
+
+		<channels>
+			<channel id="status" typeId="message">
+				<label>Partition Status</label>
+				<description>Partition Status</description>
+			</channel>
+			<channel id="arm_mode" typeId="arm_mode">
+				<label>Partition Arm Mode</label>
+				<description>Partition Arm Mode</description>
+			</channel>
+			<channel id="armed" typeId="status">
+				<label>Partition Armed Status</label>
+				<description>Partition Armed Status (ON=Armed, OFF=Disarmed)</description>
+			</channel>
+			<channel id="entry_delay" typeId="status">
+				<label>Partition Entry Delay</label>
+				<description>Partition In Entry Delay Mode</description>
+			</channel>
+			<channel id="exit_delay" typeId="status">
+				<label>Partition Exit Delay</label>
+				<description>Partition In Exit Delay Mode</description>
+			</channel>
+			<channel id="in_alarm" typeId="status">
+				<label>Partition in Alarm</label>
+				<description>Partition In Alarm</description>
+			</channel>
+			<channel id="opening_closing_mode" typeId="message">
+				<label>Partition Opening/Closing Mode</label>
+				<description>Partition Opening/Closing Mode ("User Closing", "Special Closing", "Partial Closing", "User Opening",
+					"Special Opening")</description>
+			</channel>
+		</channels>
+
+		<config-description>
+			<parameter name="partitionNumber" type="integer" required="true" min="1" max="8">
+				<label>Partition Number</label>
+				<description>The Partition Number (1-8).</description>
+				<default>1</default>
+			</parameter>
+		</config-description>
+	</thing-type>
+
 	<thing-type id="zone">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="serialbridge"/>
 		</supported-bridge-type-refs>
 
-		<label>Alarm Zone</label>
-		<description>Alarm Decoder REL or EXP zone</description>
+		<label>Zone</label>
+		<description>Represents a physical device such as a door, window, or motion sensor.</description>
 
 		<channels>
-			<channel id="contact" typeId="contact-channel"/>
+			<channel id="status" typeId="zone_status">
+				<label>Zone Status</label>
+				<description>Zone Status (Open/Closed)</description>
+			</channel>
+			<channel id="message" typeId="message">
+				<label>Zone Message</label>
+				<description>Zone Message</description>
+			</channel>
+			<channel id="bypass_mode" typeId="bypass_mode">
+				<label>Zone Bypass Mode</label>
+				<description>Zone Bypass Mode (OFF=Armed, ON=Bypassed)</description>
+			</channel>
+			<channel id="in_alarm" typeId="status">
+				<label>Zone in Alarm</label>
+				<description>Zone In Alarm</description>
+			</channel>
+			<channel id="tamper" typeId="status">
+				<label>Zone Tamper</label>
+				<description>Zone Tamper</description>
+			</channel>
+			<channel id="fault" typeId="status">
+				<label>Zone Fault</label>
+				<description>Zone Fault</description>
+			</channel>
+			<channel id="tripped" typeId="status">
+				<label>Zone Tripped</label>
+				<description>Zone Tripped</description>
+			</channel>
 		</channels>
 
-		<representation-property>id</representation-property>
-
 		<config-description>
-			<parameter name="address" type="integer" required="true">
-				<label>Zone Address</label>
+			<parameter name="partitionNumber" type="integer" min="1" max="8">
+				<label>Partition Number</label>
+				<description>The Partition Number (1-8).</description>
+				<default>1</default>
 			</parameter>
-			<parameter name="channel" type="integer" required="true">
-				<label>Zone Channel</label>
+
+			<parameter name="zoneNumber" type="integer" required="true" min="1" max="4158">
+				<label>Zone Number</label>
+				<description>The Zone Number (1-64).</description>
 			</parameter>
 		</config-description>
 	</thing-type>
 
-	<!-- Sample Channel Type -->
-	<channel-type id="sample-channel">
-		<item-type>siahoneywelladtItem</item-type>
-		<label>SiaHoneywellAdt Binding Channel</label>
-		<description>Sample channel for SiaHoneywellAdt Binding</description>
+	<!-- bridge -->
+	<channel-type id="reset">
+		<item-type>Switch</item-type>
+		<label>Reset</label>
+		<description>Reset Switch</description>
 	</channel-type>
+
+	<channel-type id="command">
+		<item-type>String</item-type>
+		<label>Send Command</label>
+		<description>Sends a DSC Alarm Command</description>
+	</channel-type>
+
+	<!-- keypad -->
+	<channel-type id="led">
+		<item-type>Number</item-type>
+		<label>Keypad LED</label>
+		<description>Keypad LED (0=Off, 1=On, 2=Flashing)</description>
+		<state pattern="%d" readOnly="true">
+			<options>
+				<option value="0">Off</option>
+				<option value="1">On</option>
+				<option value="2">Flashing</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<!-- panel -->
+	<channel-type id="panel_command">
+		<item-type>Number</item-type>
+		<label>Panel Command</label>
+		<description>Send Command</description>
+		<state pattern="%d">
+			<options>
+				<option value="-1">None</option>
+				<option value="0">Poll</option>
+				<option value="1">Status Report</option>
+				<option value="2">Labels Request (Serial Only)</option>
+				<option value="8">Dump Zone Timers (TCP Only)</option>
+				<option value="10">Set Time/Date</option>
+				<option value="200">Send User Code</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<channel-type id="time">
+		<item-type>DateTime</item-type>
+		<label>Time</label>
+		<description>Time</description>
+	</channel-type>
+
+	<channel-type id="state">
+		<item-type>Switch</item-type>
+		<label>State</label>
+		<description>State (On/Off)</description>
+	</channel-type>
+
+	<!-- partition -->
+	<channel-type id="arm_mode">
+		<item-type>Number</item-type>
+		<label>Arm Mode</label>
+		<description>Arm Mode</description>
+		<state pattern="%d">
+			<options>
+				<option value="0">Disarm</option>
+				<option value="1">Away</option>
+				<option value="2">Stay</option>
+				<option value="3">Zero</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<!-- zone -->
+	<channel-type id="zone_status">
+		<item-type>Contact</item-type>
+		<label>Zone Status</label>
+		<description>Zone Status (Open/Closed)</description>
+		<state readOnly="true"></state>
+	</channel-type>
+
+	<channel-type id="bypass_mode">
+		<item-type>Switch</item-type>
+		<label>Bypass Mode</label>
+		<description>Bypass Mode (OFF=Armed, ON=Bypassed)</description>
+	</channel-type>
+
+	<!-- common -->
+	<channel-type id="message">
+		<item-type>String</item-type>
+		<label>Message</label>
+		<description>Message Received</description>
+		<state pattern="%s" readOnly="true"></state>
+	</channel-type>
+
+	<channel-type id="status">
+		<item-type>Switch</item-type>
+		<label>Status</label>
+		<description>Status</description>
+		<state readOnly="true"></state>
+	</channel-type>
+
 
 </thing:thing-descriptions>

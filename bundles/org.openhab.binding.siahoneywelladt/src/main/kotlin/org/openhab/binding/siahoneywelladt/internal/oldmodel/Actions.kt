@@ -1,4 +1,4 @@
-package org.openhab.binding.siahoneywelladt.internal.model
+package org.openhab.binding.siahoneywelladt.internal.oldmodel
 
 // Enum to refer to an area action through an index value
 enum class AreaAction(i: Int) {

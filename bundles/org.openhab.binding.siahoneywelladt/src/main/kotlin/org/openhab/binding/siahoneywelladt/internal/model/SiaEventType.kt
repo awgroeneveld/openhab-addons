@@ -1,4 +1,6 @@
-package org.openhab.binding.siahoneywelladt.internal.handler
+package org.openhab.binding.siahoneywelladt.internal.model
+
+import org.openhab.binding.siahoneywelladt.internal.model.AddressField
 
 enum class SiaEventType(
     val code: String,
