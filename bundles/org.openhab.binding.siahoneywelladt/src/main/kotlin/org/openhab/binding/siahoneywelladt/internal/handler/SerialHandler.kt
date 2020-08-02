@@ -8,25 +8,33 @@ import org.eclipse.smarthome.core.thing.ThingStatus
 import org.eclipse.smarthome.core.thing.ThingStatusDetail
 import org.eclipse.smarthome.core.thing.binding.BaseBridgeHandler
 import org.eclipse.smarthome.core.types.Command
+import org.eclipse.smarthome.io.transport.serial.PortInUseException
 import org.eclipse.smarthome.io.transport.serial.SerialPort
+import org.eclipse.smarthome.io.transport.serial.SerialPortEvent
+import org.eclipse.smarthome.io.transport.serial.SerialPortEventListener
 import org.eclipse.smarthome.io.transport.serial.SerialPortIdentifier
 import org.eclipse.smarthome.io.transport.serial.SerialPortManager
+import org.eclipse.smarthome.io.transport.serial.UnsupportedCommOperationException
 import org.openhab.binding.siahoneywelladt.config.SerialBridgeConfig
-import org.slf4j.LoggerFactory
+import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
 import java.io.BufferedReader
 import java.io.BufferedWriter
 import java.io.IOException
 import java.io.InputStreamReader
 import java.io.OutputStreamWriter
+import java.nio.charset.Charset
 
 
-class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortManager): BaseBridgeHandler(bridge) {
-    val logger=LoggerFactory.getLogger(SerialHandler::class.java)
+class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortManager): BaseBridgeHandler(bridge),
+    SerialPortEventListener {
+    companion object {
+        val charset= Charset.forName("ISO-8859-1")
+    }
+    val logger by LoggerDelegate()
 
     private var config = SerialBridgeConfig()
     @NonNullByDefault
     private var portIdentifier: SerialPortIdentifier? = null
-
     private var serialPort: @Nullable SerialPort? = null
     private var serialPortSpeed = 115200
     private var discovery:Boolean=false
@@ -34,6 +42,9 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
     private var reader: @Nullable BufferedReader? = null
     private var writer: @Nullable BufferedWriter? = null
 
+    private var msgReaderThread: @Nullable Thread? = null
+    private val msgReaderThreadLock = Any()
+    private var panelReadyReceived=false
 
     override fun initialize() {
         logger.debug("Initializing serial bridge handler")
@@ -65,7 +76,7 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
         disconnect() // make sure we are disconnected
         try {
             var serialPort: SerialPort =
-                portIdentifier.open("org.openhab.binding.alarmdecoder", 100)
+                portIdentifier!!.open("org.openhab.binding.siahoneywelladt", 100)
             serialPort.setSerialPortParams(
                 serialPortSpeed,
                 SerialPort.DATABITS_8,
@@ -73,10 +84,9 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
                 SerialPort.PARITY_NONE
             )
             serialPort.setFlowControlMode(SerialPort.FLOWCONTROL_RTSCTS_IN or SerialPort.FLOWCONTROL_RTSCTS_OUT)
-            // Note: The V1 code called disableReceiveFraming() and disableReceiveThreshold() here
             serialPort = serialPort
-            reader = BufferedReader(InputStreamReader(serialPort.inputStream, AD_CHARSET))
-            writer = BufferedWriter(OutputStreamWriter(serialPort.outputStream, AD_CHARSET))
+            reader = BufferedReader(InputStreamReader(serialPort.inputStream, charset ))
+            writer = BufferedWriter(OutputStreamWriter(serialPort.outputStream, charset))
             logger.debug("connected to serial port: {}", config.serialPort)
             panelReadyReceived = false
             startMsgReader()
@@ -85,28 +95,48 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
             logger.debug("Cannot open serial port: {}, it is already in use", config.serialPort)
             updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Serial port already in use")
         } catch (e: UnsupportedCommOperationException) {
-            logger.debug("Error connecting to serial port: {}", e.getMessage())
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage())
+            logger.debug("Error connecting to serial port: {}", e.message)
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
         } catch (e: IOException) {
-            logger.debug("Error connecting to serial port: {}", e.getMessage())
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage())
+            logger.debug("Error connecting to serial port: {}", e.message)
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
         } catch (e: IllegalStateException) {
-            logger.debug("Error connecting to serial port: {}", e.getMessage())
-            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.getMessage())
+            logger.debug("Error connecting to serial port: {}", e.message)
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
+        }
+    }
+
+    protected fun startMsgReader() {
+        synchronized(msgReaderThreadLock) {
+            val mrt = Thread(Runnable { readerThread() }, "AD Reader")
+            mrt.isDaemon = true
+            mrt.start()
+            msgReaderThread = mrt
+        }
+    }
+
+    protected fun stopMsgReader() {
+        synchronized(msgReaderThreadLock) {
+            val mrt: Thread? = msgReaderThread
+            if (mrt != null) {
+                logger.trace("Stopping reader thread.")
+                mrt.interrupt()
+                msgReaderThread = null
+            }
         }
     }
 
     @Synchronized
     protected fun disconnect() {
         logger.trace("Disconnecting")
-        val sp: SerialPort = serialPort
+        val sp: SerialPort = serialPort!!
         if (sp != null) {
             logger.trace("Closing serial port")
             sp.close()
             serialPort = null
         }
         stopMsgReader()
-        val br: BufferedReader = reader
+        val br: BufferedReader? = reader
         if (br != null) {
             logger.trace("Closing reader")
             try {
@@ -117,7 +147,7 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
                 reader = null
             }
         }
-        val bw: BufferedWriter = writer
+        val bw: BufferedWriter? = writer
         if (bw != null) {
             logger.trace("Closing writer")
             try {
@@ -132,5 +162,37 @@ class SerialHandler(bridge: Bridge, private val serialPortManager: SerialPortMan
 
     override fun handleCommand(p0: ChannelUID?, p1: Command?) {
         TODO("Not yet implemented")
+    }
+
+    private fun readerThread() {
+        logger.debug("Message reader thread started")
+        var message: String? = null
+        try {
+            // Send version command to get device to respond with VER message.
+//            sendADCommand(ADCommand.getVersion())
+            val reader = reader
+            while (!Thread.interrupted() && reader != null && reader.readLine()
+                    .also { message = it } != null
+            ) {
+                logger.trace("Received msg: {}", message)
+
+            }
+            if (message == null) {
+                logger.info("End of input stream detected")
+                updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, "Connection lost")
+            }
+        } catch (e: IOException) {
+            logger.debug("I/O error while reading from stream: {}", e.message)
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
+        } catch (e: RuntimeException) {
+            logger.warn("Runtime exception in reader thread", e)
+            updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
+        } finally {
+            logger.debug("Message reader thread exiting")
+        }
+    }
+
+    override fun serialEvent(event: SerialPortEvent) {
+        val eventType=event.eventType
     }
 }
