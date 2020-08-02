@@ -1,9 +1,8 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <thing:thing-descriptions bindingId="siahoneywelladt"
-	xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-	xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
-	xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
-
+						  xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+						  xmlns:thing="https://openhab.org/schemas/thing-description/v1.0.0"
+						  xsi:schemaLocation="https://openhab.org/schemas/thing-description/v1.0.0 https://openhab.org/schemas/thing-description-1.0.0.xsd">
 
 
 	<bridge-type id="serialbridge">
@@ -51,7 +50,7 @@
 
 	<!-- virtual controller -->
 
-	<thing-type id="partition">
+	<thing-type id="area">
 		<supported-bridge-type-refs>
 			<bridge-type-ref id="serialbridge"/>
 		</supported-bridge-type-refs>
@@ -86,15 +85,22 @@
 			</channel>
 			<channel id="opening_closing_mode" typeId="message">
 				<label>Partition Opening/Closing Mode</label>
-				<description>Partition Opening/Closing Mode ("User Closing", "Special Closing", "Partial Closing", "User Opening",
-					"Special Opening")</description>
+				<description>Partition Opening/Closing Mode ("User Closing", "Special Closing", "Partial Closing", "User
+					Opening",
+					"Special Opening")
+				</description>
 			</channel>
 		</channels>
 
 		<config-description>
-			<parameter name="partitionNumber" type="integer" required="true" min="1" max="8">
-				<label>Partition Number</label>
-				<description>The Partition Number (1-8).</description>
+			<parameter name="letter" type="text" required="true" pattern="[A-D]">
+				<label>Area Letter</label>
+				<description>The Area Letter Indicator (A-D).</description>
+				<default>1</default>
+			</parameter>
+			<parameter name="number" type="integer" required="true" min="1" max="8">
+				<label>Area Number</label>
+				<description>The Area Number (1-8).</description>
 				<default>1</default>
 			</parameter>
 		</config-description>
@@ -109,7 +115,7 @@
 		<description>Represents a physical device such as a door, window, or motion sensor.</description>
 
 		<channels>
-			<channel id="status" typeId="zone_status">
+			<channel id="status" typeId="zoneStatus">
 				<label>Zone Status</label>
 				<description>Zone Status (Open/Closed)</description>
 			</channel>
@@ -117,7 +123,7 @@
 				<label>Zone Message</label>
 				<description>Zone Message</description>
 			</channel>
-			<channel id="bypass_mode" typeId="bypass_mode">
+			<channel id="bypass_mode" typeId="bypassMode">
 				<label>Zone Bypass Mode</label>
 				<description>Zone Bypass Mode (OFF=Armed, ON=Bypassed)</description>
 			</channel>
@@ -140,16 +146,29 @@
 		</channels>
 
 		<config-description>
-			<parameter name="partitionNumber" type="integer" min="1" max="8">
-				<label>Partition Number</label>
-				<description>The Partition Number (1-8).</description>
+			<parameter name="areaLetter" type="text" pattern="[A-D]" required="false">
+				<label>Area Letter</label>
+				<description>The Area Letter (A-D).</description>
+				<default>A</default>
+			</parameter>
+			<parameter name="areaNumber" type="integer" min="1" max="8" required="false">
+				<label>Area Number</label>
+				<description>The Area Number (1-8).</description>
 				<default>1</default>
 			</parameter>
-
-			<parameter name="zoneNumber" type="integer" required="true" min="1" max="4158">
-				<label>Zone Number</label>
-				<description>The Zone Number (1-64).</description>
+			<parameter name="rioLine" type="integer" required="true" min="1" max="4">
+				<label>Rio Line #</label>
+				<description>The Line Number the Rio is connected to (1-4)</description>
 			</parameter>
+			<parameter name="rioNr" type="integer" required="true" min="0" max="15">
+				<label>Rio Line #</label>
+				<description>The Line Number the Rio is connected to (1-4)</description>
+			</parameter>
+			<parameter name="zoneNumber" type="integer" required="true" min="1" max="8">
+				<label>Zone Number</label>
+				<description>The Zone Number (1-8).</description>
+			</parameter>
+
 		</config-description>
 	</thing-type>
 
@@ -166,52 +185,9 @@
 		<description>Sends a DSC Alarm Command</description>
 	</channel-type>
 
-	<!-- keypad -->
-	<channel-type id="led">
-		<item-type>Number</item-type>
-		<label>Keypad LED</label>
-		<description>Keypad LED (0=Off, 1=On, 2=Flashing)</description>
-		<state pattern="%d" readOnly="true">
-			<options>
-				<option value="0">Off</option>
-				<option value="1">On</option>
-				<option value="2">Flashing</option>
-			</options>
-		</state>
-	</channel-type>
-
-	<!-- panel -->
-	<channel-type id="panel_command">
-		<item-type>Number</item-type>
-		<label>Panel Command</label>
-		<description>Send Command</description>
-		<state pattern="%d">
-			<options>
-				<option value="-1">None</option>
-				<option value="0">Poll</option>
-				<option value="1">Status Report</option>
-				<option value="2">Labels Request (Serial Only)</option>
-				<option value="8">Dump Zone Timers (TCP Only)</option>
-				<option value="10">Set Time/Date</option>
-				<option value="200">Send User Code</option>
-			</options>
-		</state>
-	</channel-type>
-
-	<channel-type id="time">
-		<item-type>DateTime</item-type>
-		<label>Time</label>
-		<description>Time</description>
-	</channel-type>
-
-	<channel-type id="state">
-		<item-type>Switch</item-type>
-		<label>State</label>
-		<description>State (On/Off)</description>
-	</channel-type>
 
 	<!-- partition -->
-	<channel-type id="arm_mode">
+	<channel-type id="armMode">
 		<item-type>Number</item-type>
 		<label>Arm Mode</label>
 		<description>Arm Mode</description>
@@ -220,20 +196,22 @@
 				<option value="0">Disarm</option>
 				<option value="1">Away</option>
 				<option value="2">Stay</option>
-				<option value="3">Zero</option>
+				<option value="3">Force</option>
 			</options>
 		</state>
 	</channel-type>
 
 	<!-- zone -->
-	<channel-type id="zone_status">
+	<channel-type id="zoneStatus">
 		<item-type>Contact</item-type>
 		<label>Zone Status</label>
 		<description>Zone Status (Open/Closed)</description>
-		<state readOnly="true"></state>
+		<state readOnly="true">
+
+		</state>
 	</channel-type>
 
-	<channel-type id="bypass_mode">
+	<channel-type id="bypassMode">
 		<item-type>Switch</item-type>
 		<label>Bypass Mode</label>
 		<description>Bypass Mode (OFF=Armed, ON=Bypassed)</description>
