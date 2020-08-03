@@ -15,8 +15,12 @@ import org.openhab.binding.siahoneywelladt.internal.config.SerialBridgeConfig
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
 import java.io.BufferedReader
 import java.io.BufferedWriter
+import java.io.ByteArrayInputStream
+import java.io.ByteArrayOutputStream
 import java.io.IOException
+import java.io.InputStream
 import java.io.InputStreamReader
+import java.io.OutputStream
 import java.io.OutputStreamWriter
 import java.nio.charset.Charset
 
@@ -25,31 +29,20 @@ class SerialCommunicationClient(
     private val config: SerialBridgeConfig,
     private val statusUpdateListener: StatusUpdateListener
 ){
-    companion object {
-        val charset= Charset.forName("ISO-8859-1")
-    }
-
-    private var readerJob: Job?=null
     private val logger by LoggerDelegate()
-
+    private var readerJob: Job?=null
     private var serialPort: SerialPort?=null
     private val portIdentifier = serialPortManager.getIdentifier(config.serialPort)
-    private var reader:BufferedReader?=null
-    private var writer:BufferedWriter?=null
-
-    fun isSpecifiedPortAddressable()=portIdentifier!=null
-
-    private var msgReaderThread: @Nullable Thread? = null
-    private val msgReaderThreadLock = Any()
-
+    private var inputStream: InputStream?=null
+    private var outputStream:OutputStream?=null
 
     @Synchronized
     fun connect() {
         disconnect() // make sure we are disconnected
         try {
             this.serialPort = createSerialPort()
-            reader = BufferedReader(InputStreamReader(serialPort!!.inputStream, charset ))
-            writer = BufferedWriter(OutputStreamWriter(serialPort!!.outputStream,charset))
+            this.inputStream=serialPort!!.inputStream!!
+            this.outputStream=serialPort!!.outputStream!!
             logger.debug("connected to serial port: {}", config.serialPort)
             this.readerJob=GlobalScope.launch(Dispatchers.IO){
                 readSerialPortData()
@@ -79,32 +72,29 @@ class SerialCommunicationClient(
     fun disconnect() {
         logger.trace("Disconnecting")
         this.readerJob!!.cancel()
-        val sp: SerialPort? = serialPort
-        if (sp != null) {
+        if (this.serialPort != null) {
             logger.trace("Closing serial port")
-            sp.close()
-            serialPort = null
+            this.serialPort!!.close()
+            this.serialPort = null
         }
-        val br: BufferedReader? = reader
-        if (br != null) {
+        if (this.inputStream != null) {
             logger.trace("Closing reader")
             try {
-                br.close()
+                this.inputStream!!.close()
             } catch (e: IOException) {
                 logger.info("IO Exception closing reader: {}", e.message)
             } finally {
-                reader = null
+                this.inputStream = null
             }
         }
-        val bw: BufferedWriter? = writer
-        if (bw != null) {
+        if (this.outputStream != null) {
             logger.trace("Closing writer")
             try {
-                bw.close()
+                this.outputStream!!.close()
             } catch (e: IOException) {
                 logger.info("IO Exception closing writer: {}", e.message)
             } finally {
-                writer = null
+                this.outputStream = null
             }
         }
     }
@@ -113,10 +103,11 @@ class SerialCommunicationClient(
         try {
             // Send version command to get device to respond with VER message.
 //            sendADCommand(ADCommand.getVersion())
-            val reader = this.reader!!
+            val inputStream = this.inputStream!!
             var ready=false
-            while (reader != null && !ready){
+            while (inputStream != null && !ready){
                 //TODO: read something
+                val x=inputStream.read()
                 delay(50)
             }
         } catch (e: IOException) {
