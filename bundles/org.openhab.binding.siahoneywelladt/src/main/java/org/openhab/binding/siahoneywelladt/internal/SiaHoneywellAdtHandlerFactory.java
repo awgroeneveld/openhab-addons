@@ -36,7 +36,7 @@ import org.osgi.service.component.annotations.Component;
 @Component(configurationPid = "binding.siahoneywelladt", service = ThingHandlerFactory.class)
 public class SiaHoneywellAdtHandlerFactory extends BaseThingHandlerFactory {
 
-    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.singleton(THING_TYPE_SAMPLE);
+    private static final Set<ThingTypeUID> SUPPORTED_THING_TYPES_UIDS = Collections.singleton(THING_TYPE_SERIAL_BRIDGE);
 
     @Override
     public boolean supportsThingType(ThingTypeUID thingTypeUID) {
@@ -47,10 +47,10 @@ public class SiaHoneywellAdtHandlerFactory extends BaseThingHandlerFactory {
     protected @Nullable ThingHandler createHandler(Thing thing) {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
-        if (THING_TYPE_SAMPLE.equals(thingTypeUID)) {
+        if (THING_TYPE_SERIAL_BRIDGE.equals(thingTypeUID)) {
             return new SiaHoneywellAdtHandler(thing);
         }
 
-        return null;
+        throw new IllegalArgumentException("The thing type " + thingTypeUID + " is not supported by the KNX binding.");
     }
 }

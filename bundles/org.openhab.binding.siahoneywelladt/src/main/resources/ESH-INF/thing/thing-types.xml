@@ -16,7 +16,7 @@
 			<parameter name="password" type="text" required="false">
 				<context>password</context>
 				<label>Password</label>
-				<description>The Password to login to the Remote RS232 interface.</description>
+				<description>The Password to login to the Alarm system through RS232.</description>
 				<default>user</default>
 			</parameter>
 			<parameter name="serialPort" type="text" required="true">
@@ -43,7 +43,7 @@
 			<parameter name="pollPeriod" type="integer" required="false" min="1" max="15">
 				<label>Poll Period</label>
 				<description>The Poll Period (minutes).</description>
-				<default>1</default>
+				<default>5</default>
 			</parameter>
 		</config-description>
 	</bridge-type>

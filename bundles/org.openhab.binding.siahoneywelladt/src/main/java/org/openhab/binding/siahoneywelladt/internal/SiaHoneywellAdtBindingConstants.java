@@ -27,7 +27,15 @@ public class SiaHoneywellAdtBindingConstants {
     private static final String BINDING_ID = "siahoneywelladt";
 
     // List of all Thing Type UIDs
-    public static final ThingTypeUID THING_TYPE_SAMPLE = new ThingTypeUID(BINDING_ID, "sample");
+    public static final ThingTypeUID THING_TYPE_SERIAL_BRIDGE = new ThingTypeUID(BINDING_ID, "serialbridge");
+
+    // List of all Thing Configuration parameters
+    public static final String PASSWORD="password";
+    public static final String SERIAL_PORT="serialPort";
+    public static final String BITRATE="bitrate";
+    public static final String DISCOVERY="discovery";
+    public static final String DIPSWITCH_8="dipSwitch8";
+    public static final String POLL_PERIOD="pollPeriod";
 
     // List of all Channel ids
     public static final String CHANNEL_1 = "channel1";
