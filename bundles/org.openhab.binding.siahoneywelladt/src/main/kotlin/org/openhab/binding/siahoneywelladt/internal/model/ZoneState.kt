@@ -11,3 +11,8 @@ enum class ZoneState(val siaValue: Byte) {
     TAMPER_CV(7),
     FAULT(8)
 }
+
+enum class ZoneAction(override val siaAction:Int):SiaAction{
+    UNOMIT(0),
+    OMIT(1)
+}

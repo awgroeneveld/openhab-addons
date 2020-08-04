@@ -5,11 +5,15 @@ import io.kotest.matchers.shouldBe
 import org.openhab.binding.siahoneywelladt.internal.model.Area
 import org.openhab.binding.siahoneywelladt.internal.model.AreaAction
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
+import org.openhab.binding.siahoneywelladt.internal.model.command.action.AreaActionCommand
 
 class AreaActionCommandTest : StringSpec({
 
     "Area action command should be able to run for all areas" {
-        val command=AreaActionCommand(AreaAction.SET)
+        val command=
+            AreaActionCommand(
+                AreaAction.SET
+            )
         val siaBlocks=command.getSiaBlocks()
         siaBlocks.size shouldBe 1
         siaBlocks[0].let{
@@ -21,7 +25,11 @@ class AreaActionCommandTest : StringSpec({
     }
 
     "Area action command should be able to run on single areas" {
-        val command=AreaActionCommand(AreaAction.SET, listOf(Area('B',1)))
+        val command=
+            AreaActionCommand(
+                AreaAction.SET,
+                listOf(Area('B', 1))
+            )
         val siaBlocks=command.getSiaBlocks()
         siaBlocks.size shouldBe 1
         siaBlocks[0].let{
@@ -32,5 +40,4 @@ class AreaActionCommandTest : StringSpec({
         }
     }
 })
-
 

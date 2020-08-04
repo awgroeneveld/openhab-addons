@@ -4,6 +4,7 @@ import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import org.openhab.binding.siahoneywelladt.internal.model.Area
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
+import org.openhab.binding.siahoneywelladt.internal.model.command.state.AreaArmedStateCommand
 
 class AreaArmedStateCommandTest : StringSpec({
 
