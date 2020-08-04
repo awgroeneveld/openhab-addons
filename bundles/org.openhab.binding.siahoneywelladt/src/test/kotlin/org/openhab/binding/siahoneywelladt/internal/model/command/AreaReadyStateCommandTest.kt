@@ -3,13 +3,13 @@ package org.openhab.binding.siahoneywelladt.internal.model.command
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.command.state.AreaReadyStateCommand
+import org.openhab.binding.siahoneywelladt.internal.model.command.state.AllAreasReadyStateCommand
 
 class AreaReadyStateCommandTest : StringSpec({
 
     "Area ready state command should be able to run for all areas" {
         val command=
-            AreaReadyStateCommand()
+            AllAreasReadyStateCommand()
         val siaBlocks=command.getSiaBlocks()
         siaBlocks.size shouldBe 1
         siaBlocks[0].let{

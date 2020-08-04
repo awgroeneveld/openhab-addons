@@ -22,12 +22,22 @@ enum class SiaCommandType(
 enum class SiaStateRequestType(
     val value: String,
     val type: SiaCommandSubjectType,
-    val function: SiaFunction
+    val function: SiaFunction,
+    val instances: Int=1
 ) {
     AREA_ARMED_STATE("SA", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
-    AREA_ALARM_STATE("SA91", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
-    AREA_READY_STATE("SA92", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
-    ZONE_OMIT_STATE("SB", SiaCommandSubjectType.ZONE, SiaFunction.CONTROL)
+    ALL_AREAS_ALARM_STATE("SA91", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
+    ALL_AREAS_READY_STATE("SA92", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
+    ZONE_OMIT_STATE("SB", SiaCommandSubjectType.ZONE, SiaFunction.CONTROL),
+    ZONE_TECHNICAL_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED),
+    ALL_ZONES_READY_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_ALARM_STATE("ZS10", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_OPEN_STATE("ZS20", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_TAMPER_STATE("ZS30", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_RESISTANCE_STATE("ZS40", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_OMITTED_STATE("ZS50", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_MASKED_STATE("ZS60", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_FAULT_STATE("ZS70", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2)
 }
 
 
@@ -61,9 +71,37 @@ abstract class SiaStateRequestCommand(val type: SiaStateRequestType) : SiaComman
         createSiaBlockFromMessage(type.value)
 }
 
-//
-//class LoginCommand(val password: String):SiaCommand(){
-//
-//}
+abstract class SiaStateMultiRequestCommand(val type: SiaStateRequestType) : SiaCommand(type.function) {
+    init{
+        require(type.instances>1){"Should be at least two instances"}
+    }
+
+    private fun instances() = (1..type.instances)
+
+    protected fun createSiaBlocks(state: SiaState) =
+        instances().map{ createSiaBlockFromMessage("${type.value}$it${state}")}
+
+    protected fun createSiaBlocks(identifier: Int) =
+        instances().map{createSiaBlockFromMessage("${type.value}$it${identifier}")}
+    protected fun createSiaBlocks() =
+        instances().map{createSiaBlockFromMessage("${type.value}$it")}
+}
 
 
+class LoginCommand(val password: String):SiaCommand(SiaFunction.REMOTE_LOGIN){
+    override fun getSiaBlocks(): List<SiaBlock> {
+        return listOf(createSiaBlockFromMessage(password))
+    }
+}
+
+class RejectCommand(val password: String):SiaCommand(SiaFunction.REJECT){
+    override fun getSiaBlocks(): List<SiaBlock> {
+        return listOf(createSiaBlockFromMessage(""))
+    }
+}
+
+class AcknowledgeCommand(val password: String):SiaCommand(SiaFunction.ACKNOWLEDGE){
+    override fun getSiaBlocks(): List<SiaBlock> {
+        return listOf(createSiaBlockFromMessage(""))
+    }
+}

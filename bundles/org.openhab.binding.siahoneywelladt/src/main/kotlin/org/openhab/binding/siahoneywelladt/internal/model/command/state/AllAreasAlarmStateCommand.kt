@@ -4,9 +4,9 @@ import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestCommand
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestType
 
-class AreaAlarmStateCommand :
+class AllAreasAlarmStateCommand :
     SiaStateRequestCommand(
-        SiaStateRequestType.AREA_ALARM_STATE
+        SiaStateRequestType.ALL_AREAS_ALARM_STATE
     ) {
     override fun getSiaBlocks(): List<SiaBlock> =
         listOf(createSiaBlock())
