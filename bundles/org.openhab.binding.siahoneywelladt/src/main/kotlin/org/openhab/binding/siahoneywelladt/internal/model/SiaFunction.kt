@@ -1,5 +1,9 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
+import org.apache.commons.lang.CharSet
+import java.lang.UnsupportedOperationException
+import java.nio.charset.Charset
+
 enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
     END_OF_DATA(0x30, true),
     WAIT(0x31, true),
@@ -39,65 +43,49 @@ data class Area(val group: Char, val numberInGroup: Int) {
 
     init {
         require(group in 'A'..'D')
-        require(numberInGroup in 1..8)
-        identifier = (10 * (group - 'A') + numberInGroup)
+        val maxAreasInGroup = 8
+        require(numberInGroup in 1..maxAreasInGroup)
+        identifier = (maxAreasInGroup * (group - 'A') + numberInGroup)
+    }
+}
+
+data class Zone(val line: Int, val rio: Int, val connection:Int){
+    val identifier: Int
+
+    init{
+        require(line in 1..4)
+        require(rio in 0..15)
+        require(connection in 1..8)
+        identifier = 1000*line+rio*10+connection
     }
 }
 
 class SiaBlock(val function: SiaFunction, val message: ByteArray, val reverseChannelEnabled: Boolean = false) {
+    data class SiaBlockHeader(val messageSize: Int, val needsAcknowledge: Boolean, val reverseChannelEnabled: Boolean){
+        val value=(messageSize +
+                (if (needsAcknowledge) 64 else 0) +
+                (if (reverseChannelEnabled) 128 else 0))
+    }
     companion object{
         const val blockOverhead=3
     }
-    val header = (message.size +
-            (if (function.needsAcknowledge) 64 else 0) +
-            (if (reverseChannelEnabled) 128 else 0))
+    val header = SiaBlockHeader(message.size, function.needsAcknowledge, reverseChannelEnabled)
 
-    fun getParity():Byte{
-        var parity=255 xor header xor function.value
+    fun checksum():Byte{
+        var parity=255 xor header.value xor function.value
         message.forEach { parity=parity xor it.toInt() }
         return parity.toByte()
     }
 
-    fun toByteArray(){
+    fun toByteArray(): ByteArray {
         val size = message.size + blockOverhead
         val result=ByteArray(size)
-        result[0]=header.toByte()
+        result[0]=header.value.toByte()
         result[1]=function.value.toByte()
         message.copyInto(result,2)
-        result[size-1]=getParity()
+        result[size-1]=checksum()
+        return result
     }
 
 }
 
-enum class SiaCommandSubjectType {
-    AREA, ZONE
-}
-
-enum class SiaCommandType(val value: String, val type: SiaCommandSubjectType) {
-    AREA("SA", SiaCommandSubjectType.AREA)
-}
-
-
-abstract class SiaCommand(val function: SiaFunction, val type: SiaCommandType) {
-    abstract fun getSiaBlocks(): List<SiaBlock>
-}
-
-
-abstract class AllAreaSiaCommand(function: SiaFunction, type: SiaCommandType) :
-    SiaCommand(function, type) {
-
-}
-
-abstract class SingleAreaSiaCommand(val area: Area, function: SiaFunction, type: SiaCommandType) :
-    SiaCommand(function, type) {
-
-}
-
-class LoginCommand(val password: String)
-
-class AreaActionCommand(area: Area, val action: AreaAction) :
-    SingleAreaSiaCommand(area, SiaFunction.CONTROL, SiaCommandType.AREA) {
-
-}
-
-class AllAreaActionCommand(val action: AreaAction) : AllAreaSiaCommand(SiaFunction.CONTROL, SiaCommandType.AREA)
