@@ -1,5 +1,7 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
+import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
+
 enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
     END_OF_DATA(0x30, true),
     WAIT(0x31, true),
@@ -106,5 +108,12 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
         return result
     }
 
+    fun getSiaEventType(): SiaEventType? {
+        val code = message.copyOfRange(0, 2)
+            .toString(SharedConfig.CHARACTER_SET)
+        return SiaEventType.getSiaEvent(code)
+    }
+
+    fun getTotalLength() = message.size + blockOverhead
 }
 

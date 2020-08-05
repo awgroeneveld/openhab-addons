@@ -1375,5 +1375,13 @@ enum class SiaEventType(
         "Freeze unbypass",
         "Low temperature detection bypass removed",
         AddressField.ZONE
-    )
+    );
+
+    companion object {
+        private val siaEventTypesByCode = values().map { it.code to it }
+            .toMap()
+
+        fun getSiaEvent(code: String) = siaEventTypesByCode[code]
+    }
+
 }

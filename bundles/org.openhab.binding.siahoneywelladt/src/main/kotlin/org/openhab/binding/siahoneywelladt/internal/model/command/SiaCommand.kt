@@ -93,14 +93,3 @@ class LoginCommand(val password: String) : SiaCommand(SiaFunction.REMOTE_LOGIN) 
     }
 }
 
-class RejectCommand(val password: String) : SiaCommand(SiaFunction.REJECT) {
-    override fun getSiaBlocks(): List<SiaBlock> {
-        return listOf(createSiaBlockFromMessage(""))
-    }
-}
-
-class AcknowledgeCommand(val password: String) : SiaCommand(SiaFunction.ACKNOWLEDGE) {
-    override fun getSiaBlocks(): List<SiaBlock> {
-        return listOf(createSiaBlockFromMessage(""))
-    }
-}
