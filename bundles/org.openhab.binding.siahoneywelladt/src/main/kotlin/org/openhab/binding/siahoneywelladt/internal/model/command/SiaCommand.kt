@@ -48,8 +48,6 @@ abstract class SiaCommand(private val function: SiaFunction) {
 
     abstract fun getSiaBlocks(): List<SiaBlock>
     protected fun createSiaBlockFromMessage(message: String) = SiaBlock(function, message.toByteArray(charset))
-
-
 }
 
 abstract class SiaActionCommand(val type: SiaCommandType) : SiaCommand(type.function) {
