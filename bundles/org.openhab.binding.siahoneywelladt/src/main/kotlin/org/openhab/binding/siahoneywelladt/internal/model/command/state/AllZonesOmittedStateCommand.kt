@@ -4,7 +4,7 @@ import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateMultiRequestCommand
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestType
 
-class AllZonesOmittedStateCommand() :
+class AllZonesOmittedStateCommand :
     SiaStateMultiRequestCommand(
         SiaStateRequestType.ALL_ZONES_OMITTED_STATE
     ) {

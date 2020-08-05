@@ -1,6 +1,6 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
-enum class ZoneTechnicalState(override val siaState: Int):SiaState {
+enum class ZoneTechnicalState(override val siaState: Int) : SiaState {
     TAMPER_SC(0),
     LOW_RESISTANCE(1),
     CLOSED(2),

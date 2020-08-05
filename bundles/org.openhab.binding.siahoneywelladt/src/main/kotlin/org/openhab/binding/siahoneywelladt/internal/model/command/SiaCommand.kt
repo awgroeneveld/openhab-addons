@@ -23,7 +23,7 @@ enum class SiaStateRequestType(
     val value: String,
     val type: SiaCommandSubjectType,
     val function: SiaFunction,
-    val instances: Int=1
+    val instances: Int = 1
 ) {
     AREA_ARMED_STATE("SA", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
     ALL_AREAS_ALARM_STATE("SA91", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
@@ -70,35 +70,36 @@ abstract class SiaStateRequestCommand(val type: SiaStateRequestType) : SiaComman
 }
 
 abstract class SiaStateMultiRequestCommand(val type: SiaStateRequestType) : SiaCommand(type.function) {
-    init{
-        require(type.instances>1){"Should be at least two instances"}
+    init {
+        require(type.instances > 1) { "Should be at least two instances" }
     }
 
     private fun instances() = (1..type.instances)
 
     protected fun createSiaBlocks(state: SiaState) =
-        instances().map{ createSiaBlockFromMessage("${type.value}$it${state}")}
+        instances().map { createSiaBlockFromMessage("${type.value}$it${state}") }
 
     protected fun createSiaBlocks(identifier: Int) =
-        instances().map{createSiaBlockFromMessage("${type.value}$it${identifier}")}
+        instances().map { createSiaBlockFromMessage("${type.value}$it${identifier}") }
+
     protected fun createSiaBlocks() =
-        instances().map{createSiaBlockFromMessage("${type.value}$it")}
+        instances().map { createSiaBlockFromMessage("${type.value}$it") }
 }
 
 
-class LoginCommand(val password: String):SiaCommand(SiaFunction.REMOTE_LOGIN){
+class LoginCommand(val password: String) : SiaCommand(SiaFunction.REMOTE_LOGIN) {
     override fun getSiaBlocks(): List<SiaBlock> {
         return listOf(createSiaBlockFromMessage(password))
     }
 }
 
-class RejectCommand(val password: String):SiaCommand(SiaFunction.REJECT){
+class RejectCommand(val password: String) : SiaCommand(SiaFunction.REJECT) {
     override fun getSiaBlocks(): List<SiaBlock> {
         return listOf(createSiaBlockFromMessage(""))
     }
 }
 
-class AcknowledgeCommand(val password: String):SiaCommand(SiaFunction.ACKNOWLEDGE){
+class AcknowledgeCommand(val password: String) : SiaCommand(SiaFunction.ACKNOWLEDGE) {
     override fun getSiaBlocks(): List<SiaBlock> {
         return listOf(createSiaBlockFromMessage(""))
     }

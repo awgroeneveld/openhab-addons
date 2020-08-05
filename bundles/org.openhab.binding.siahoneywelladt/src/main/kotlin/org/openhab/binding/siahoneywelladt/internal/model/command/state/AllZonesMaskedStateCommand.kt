@@ -4,7 +4,7 @@ import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateMultiRequestCommand
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestType
 
-class AllZonesMaskedStateCommand() :
+class AllZonesMaskedStateCommand :
     SiaStateMultiRequestCommand(
         SiaStateRequestType.ALL_ZONES_MASKED_STATE
     ) {

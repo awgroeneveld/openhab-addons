@@ -1,6 +1,6 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
-enum class AreaAction(override val siaAction: Int):SiaAction {
+enum class AreaAction(override val siaAction: Int) : SiaAction {
     UNSET(0),
     SET(1),
     PART_SET(2),

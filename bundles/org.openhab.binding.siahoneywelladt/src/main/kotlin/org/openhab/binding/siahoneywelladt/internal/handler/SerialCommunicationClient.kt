@@ -5,7 +5,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
-import org.eclipse.jdt.annotation.Nullable
 import org.eclipse.smarthome.core.thing.ThingStatus
 import org.eclipse.smarthome.core.thing.ThingStatusDetail
 import org.eclipse.smarthome.io.transport.serial.PortInUseException
@@ -13,38 +12,31 @@ import org.eclipse.smarthome.io.transport.serial.SerialPort
 import org.eclipse.smarthome.io.transport.serial.SerialPortManager
 import org.openhab.binding.siahoneywelladt.internal.config.SerialBridgeConfig
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
-import java.io.BufferedReader
-import java.io.BufferedWriter
-import java.io.ByteArrayInputStream
-import java.io.ByteArrayOutputStream
 import java.io.IOException
 import java.io.InputStream
-import java.io.InputStreamReader
 import java.io.OutputStream
-import java.io.OutputStreamWriter
-import java.nio.charset.Charset
 
 class SerialCommunicationClient(
     private val serialPortManager: SerialPortManager,
     private val config: SerialBridgeConfig,
     private val statusUpdateListener: StatusUpdateListener
-){
+) {
     private val logger by LoggerDelegate()
-    private var readerJob: Job?=null
-    private var serialPort: SerialPort?=null
+    private var readerJob: Job? = null
+    private var serialPort: SerialPort? = null
     private val portIdentifier = serialPortManager.getIdentifier(config.serialPort)
-    private var inputStream: InputStream?=null
-    private var outputStream:OutputStream?=null
+    private var inputStream: InputStream? = null
+    private var outputStream: OutputStream? = null
 
     @Synchronized
     fun connect() {
         disconnect() // make sure we are disconnected
         try {
             this.serialPort = createSerialPort()
-            this.inputStream=serialPort!!.inputStream!!
-            this.outputStream=serialPort!!.outputStream!!
+            this.inputStream = serialPort!!.inputStream!!
+            this.outputStream = serialPort!!.outputStream!!
             logger.debug("connected to serial port: {}", config.serialPort)
-            this.readerJob=GlobalScope.launch(Dispatchers.IO){
+            this.readerJob = GlobalScope.launch(Dispatchers.IO) {
                 readSerialPortData()
             }
         } catch (e: PortInUseException) {
@@ -55,7 +47,7 @@ class SerialCommunicationClient(
     }
 
     private fun createSerialPort(): SerialPort {
-        if (portIdentifier==null)
+        if (portIdentifier == null)
             throw Exception("Configured serial port does not exist")
         val createdSerialPort = portIdentifier.open("org.openhab.binding.siahoneywelladt", 100)
         createdSerialPort.setSerialPortParams(
@@ -104,23 +96,30 @@ class SerialCommunicationClient(
             // Send version command to get device to respond with VER message.
 //            sendADCommand(ADCommand.getVersion())
             val inputStream = this.inputStream!!
-            var ready=false
-            while (inputStream != null && !ready){
+            var ready = false
+            while (inputStream != null && !ready) {
                 //TODO: read something
-                val x=inputStream.read()
+                val x = inputStream.read()
                 delay(50)
             }
         } catch (e: IOException) {
             logger.error("I/O error while reading from stream: {}", e.message)
-            statusUpdateListener.handleStatusChange(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
+            statusUpdateListener.handleStatusChange(
+                ThingStatus.OFFLINE,
+                ThingStatusDetail.COMMUNICATION_ERROR,
+                e.message
+            )
         } catch (e: RuntimeException) {
             logger.error("Runtime exception in reader thread", e)
-            statusUpdateListener.handleStatusChange(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR, e.message)
+            statusUpdateListener.handleStatusChange(
+                ThingStatus.OFFLINE,
+                ThingStatusDetail.COMMUNICATION_ERROR,
+                e.message
+            )
         } finally {
             logger.error("Message reader thread exiting")
         }
     }
-
 
 
 }

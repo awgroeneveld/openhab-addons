@@ -12,7 +12,7 @@ enum class AreaAction(i: Int) {
     ALARM(0),
     READY(0),
     COUNT(0)
-};
+}
 
 enum class ZoneAction {
     UNOMIT,
@@ -22,32 +22,32 @@ enum class ZoneAction {
     PARAMETER,
     SET,
     COUNT
-};
+}
 
 
 // Enum to refer to a zone parameter option through an index value
-enum class ZoneParameterOption{
+enum class ZoneParameterOption {
     SOAK_TEST,
     PART_SET,
     COUNT
-};
+}
 
 // Enum to refer to a zone parameter flag through an index value
-enum class ZoneParameterFlag  {
+enum class ZoneParameterFlag {
     ON,
     OFF
-};
+}
 
 // Enum to refer to a zone set state command through an index value
-enum class ZoneSetState{
+enum class ZoneSetState {
     OPEN,
     CLOSED,
     OPEN_AND_CLOSE,
     TAMPER
-};
+}
 
 // Enum to refer to a zones state action through an index value
-enum class ZoneStateAction{
+enum class ZoneStateAction {
     READY,
     ALARM,
     OPEN,
@@ -55,35 +55,35 @@ enum class ZoneStateAction{
     RSTATE,
     OMITTED,
     COUNT
-};
+}
 
 // Enum to refer to an output action through an index value
 enum class OutputAction {
     OFF,
     ON
-};
+}
 
 // Enum to refer to a poll action through an index value
-enum class PollAction{
+enum class PollAction {
     OFF,
     ON,
     ADD,
     REMOVE,
     ONE_SHOT,
     COUNT
-};
+}
 
 // Enum to refer to a poll item through an index value
-enum class PollItem{
+enum class PollItem {
     AREAS,
     ZONES,
     OUTPUTS,
     EVERYTHING
-};
+}
 
-enum class CodeAlarmModule{
+enum class CodeAlarmModule {
     TELECOM,
     RS232,
     MONITOR,
     ALL
-};
+}

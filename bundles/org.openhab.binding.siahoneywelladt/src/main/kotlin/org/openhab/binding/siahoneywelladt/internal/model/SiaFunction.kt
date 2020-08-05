@@ -1,10 +1,5 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
-import org.apache.commons.lang.CharSet
-import java.lang.UnsupportedOperationException
-import java.nio.charset.Charset
-import kotlin.experimental.and
-
 enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
     END_OF_DATA(0x30, true),
     WAIT(0x31, true),
@@ -39,7 +34,9 @@ enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
     VIDEO(0x49, true);
 
     companion object {
-        private val functionsByCode = values().map { it.value to it  }.toMap()
+        private val functionsByCode = values().map { it.value to it }
+            .toMap()
+
         fun getFunction(value: Int): SiaFunction? = functionsByCode[value]
     }
 
@@ -68,29 +65,30 @@ data class Zone(val line: Int, val rio: Int, val connection: Int) {
 }
 
 class SiaBlockHeader(val messageSize: Int, val needsAcknowledge: Boolean, val reverseChannelEnabled: Boolean) {
-    companion object{
-        fun fromHeaderByte(byte: Byte):SiaBlockHeader{
-            val byteAsInt=byte.toInt()
-            val messageSize=byteAsInt and 31
-            val needsAcknowledge = (byteAsInt and 64)==1
-            val reverseChannelEnabled= (byteAsInt and 128)==1
+    companion object {
+        fun fromHeaderByte(byte: Byte): SiaBlockHeader {
+            val byteAsInt = byte.toInt() and 0xFF
+            val messageSize = byteAsInt and 63
+            val needsAcknowledge = (byteAsInt and 64) == 64
+            val reverseChannelEnabled = (byteAsInt and 128) == 128
             return SiaBlockHeader(messageSize, needsAcknowledge, reverseChannelEnabled)
         }
     }
+
     val value = (messageSize +
             (if (needsAcknowledge) 64 else 0) +
             (if (reverseChannelEnabled) 128 else 0))
-    val totalSize=messageSize+3
+    val totalSize = messageSize + 3
 }
 
-class SiaBlock(val function: SiaFunction, val message: ByteArray, val reverseChannelEnabled: Boolean = false) {
-
-
+class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val message: ByteArray) {
     companion object {
         const val blockOverhead = 3
     }
 
-    val header = SiaBlockHeader(message.size, function.needsAcknowledge, reverseChannelEnabled)
+    constructor(function: SiaFunction, message: ByteArray, reverseChannelEnabled: Boolean = false) :
+            this(function, SiaBlockHeader(message.size, function.needsAcknowledge, reverseChannelEnabled), message)
+
 
     fun checksum(): Byte {
         var parity = 255 xor header.value xor function.value
