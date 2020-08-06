@@ -4,35 +4,10 @@ import org.openhab.binding.siahoneywelladt.internal.handler.Constants.EVENT_DECO
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlockHeader
 import org.openhab.binding.siahoneywelladt.internal.model.SiaEvent
-import org.openhab.binding.siahoneywelladt.internal.model.SiaEventType
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.command.SiaCommand
 import org.openhab.binding.siahoneywelladt.internal.model.command.comms.AcknowledgeCommand
 import org.openhab.binding.siahoneywelladt.internal.model.command.comms.RejectCommand
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
-
-class SiaEventFactory private constructor() {
-    companion object {
-        val instance = SiaEventFactory()
-    }
-
-    fun createSiaEvent(eventType: SiaEventType, message: ByteArray, needsAcknowledge: Boolean) =
-        SiaEvent(
-            eventType,
-            message,
-            needsAcknowledge
-        )
-}
-
-interface SiaEventListener {
-    fun handleEvent(siaEvent: SiaEvent)
-}
-
-class SiaCommandTransmitter {
-    fun transmit(command: SiaCommand) {}
-}
-
-class IllegalSiaCommandException(message: String, val moveByteCount: Int) : Exception(message)
 
 class EventDecoder(private val eventListener: SiaEventListener, private val commandTransmitter: SiaCommandTransmitter) {
     private val logger by LoggerDelegate()
@@ -99,7 +74,7 @@ class EventDecoder(private val eventListener: SiaEventListener, private val comm
     ): SiaBlock {
         val messageSize = header.messageSize
         val siaBlock = SiaBlock(function, header, extractMessage(index, messageSize))
-        val inputChecksum = buffer[index + messageSize + 1]
+        val inputChecksum = buffer[index + messageSize + 2]
         if (siaBlock.checksum() != inputChecksum) {
             throw IllegalSiaCommandException(
                 "Checksum of SiaBlock ${inputChecksum.toInt() and 0xFF} not equal " +
@@ -136,14 +111,14 @@ class EventDecoder(private val eventListener: SiaEventListener, private val comm
         else null
     }
 
-    fun decode(newBytes: ByteArray) {
-        if (newBytes.isEmpty())
+    fun decode(newBytes: ByteArray, bytesRead: Int) {
+        if (bytesRead == 0)
             return
-        if (size + newBytes.size < buffer.size) {
+        if (size + bytesRead > buffer.size) {
             logger.error("Buffer overrun, dropping old buffer of size $size.")
             size = 0
         }
-        newBytes.copyInto(buffer, size)
+        newBytes.copyInto(buffer, size, 0, bytesRead)
         size += newBytes.size
 
         decodeFunctionsAndReturnLastCorrectEndIndex()

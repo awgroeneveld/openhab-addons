@@ -1,6 +1,7 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
 import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
+import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig.CHARACTER_SET
 
 enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
     END_OF_DATA(0x30, true),
@@ -93,8 +94,8 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
 
 
     fun checksum(): Byte {
-        var parity = 255 xor header.value xor function.value
-        message.forEach { parity = parity xor it.toInt() }
+        var parity = 0xFF xor header.value xor function.value
+        message.forEach { parity = parity xor (it.toInt() and 0xFF) }
         return parity.toByte()
     }
 
@@ -115,5 +116,9 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
     }
 
     fun getTotalLength() = message.size + blockOverhead
+
+    override fun toString(): String {
+        return "SIA Block, function: ${function.name}, message: ${message.toString(CHARACTER_SET)}"
+    }
 }
 
