@@ -1,40 +1,39 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
-import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
 import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig.CHARACTER_SET
 
-enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
-    END_OF_DATA(0x30, true),
-    WAIT(0x31, true),
-    ABORT(0x32, true),
-    RES_3(0x33, true),
-    RES_4(0x34, true),
-    RES_5(0x35, true),
-    ACK_AND_STANDBY(0x36, true),
-    ACK_AND_DISCONNECT(0x37, true),
-    ACKNOWLEDGE(0x38, false),
-    ALT_ACKNOWLEDGE(0x08, false),
-    REJECT(0x39, false),
-    ALT_REJECT(0x09, false),
+enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean, text: String) {
+    END_OF_DATA(0x30, true, "End of data"),
+    WAIT(0x31, true, "Wait"),
+    ABORT(0x32, true, "Abort"),
+    RES_3(0x33, true, "Reserved"),
+    RES_4(0x34, true, "Reserved"),
+    RES_5(0x35, true, "Reserved"),
+    ACK_AND_STANDBY(0x36, true, "Acknowledge and standby"),
+    ACK_AND_DISCONNECT(0x37, true, "Acknowledge and disconnect"),
+    ACKNOWLEDGE(0x38, false, "Acknowledge"),
+    ALT_ACKNOWLEDGE(0x08, false, "Acknowledge"),
+    REJECT(0x39, false, "Reject"),
+    ALT_REJECT(0x09, false, "Reject"),
 
     // INFO BLOCKS
-    CONTROL(0x43, false),
-    ENVIRONMENTAL(0x45, true),
-    NEW_EVENT(0x4E, true),
-    OLD_EVENT(0x4F, true),
-    PROGRAM(0x50, true),
+    CONTROL(0x43, false, "Control"),
+    ENVIRONMENTAL(0x45, true, "Environmental"),
+    NEW_EVENT(0x4E, true, "New event"),
+    OLD_EVENT(0x4F, true, "Old event"),
+    PROGRAM(0x50, true, "Program"),
 
     // SPECIAL BLOCKS
-    CONFIGURATION(0x40, false),
-    REMOTE_LOGIN(0x3F, true),
-    ACCOUNT_ID(0x23, true),
-    ORIGIN_ID(0x26, true),
-    ASCII(0x41, true),
-    EXTENDED(0x58, false),
-    LISTEN_IN(0x4C, true),
-    VCHN_REQUEST(0x56, true),
-    VCHN_FRAME(0x76, true),
-    VIDEO(0x49, true);
+    CONFIGURATION(0x40, false, "Configuration"),
+    REMOTE_LOGIN(0x3F, true, "Remote login"),
+    ACCOUNT_ID(0x23, true, "Account ID"),
+    ORIGIN_ID(0x26, true, "Origin ID"),
+    ASCII(0x41, true, "ASCII"),
+    EXTENDED(0x58, false, "Extended"),
+    LISTEN_IN(0x4C, true, "Listen-In"),
+    VCHN_REQUEST(0x56, true, "Video channel request"),
+    VCHN_FRAME(0x76, true, "Video channel frame data"),
+    VIDEO(0x49, true, "Video");
 
     companion object {
         private val functionsByCode = values().map { it.value to it }
@@ -42,6 +41,7 @@ enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean) {
 
         fun getFunction(value: Int): SiaFunction? = functionsByCode[value]
     }
+
 
 }
 
@@ -93,6 +93,12 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
             this(function, SiaBlockHeader(message.size, function.needsAcknowledge, reverseChannelEnabled), message)
 
 
+    val eventCode =
+        if (message.size < 2)
+            null
+        else message.copyOfRange(0, 2)
+            .toString(CHARACTER_SET)
+
     fun checksum(): Byte {
         var parity = 0xFF xor header.value xor function.value
         message.forEach { parity = parity xor (it.toInt() and 0xFF) }
@@ -109,13 +115,13 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
         return result
     }
 
-    fun getSiaEventType(): SiaEventType? {
-        val code = message.copyOfRange(0, 2)
-            .toString(SharedConfig.CHARACTER_SET)
-        return SiaEventType.getSiaEvent(code)
-    }
+    fun getSiaEventType() = eventCode?.let { SiaEventType.getSiaEvent(eventCode) }
+
+    fun getSiaMetaDataType() = eventCode?.let { SiaMetaDataType.getMetaDataType(eventCode) }
 
     fun getTotalLength() = message.size + blockOverhead
+
+    fun getMessageAsString() = message.toString(CHARACTER_SET)
 
     override fun toString(): String {
         return "SIA Block, function: ${function.name}, message: ${message.toString(CHARACTER_SET)}"

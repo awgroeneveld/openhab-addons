@@ -1,7 +1,7 @@
 package org.openhab.binding.siahoneywelladt.internal.handler
 
-import org.openhab.binding.siahoneywelladt.internal.model.SiaEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaEventType
+import org.openhab.binding.siahoneywelladt.internal.model.SiaRegularEvent
 
 class SiaEventFactory private constructor() {
     companion object {
@@ -9,7 +9,7 @@ class SiaEventFactory private constructor() {
     }
 
     fun createSiaEvent(eventType: SiaEventType, message: ByteArray, needsAcknowledge: Boolean) =
-        SiaEvent(
+        SiaRegularEvent(
             eventType,
             message,
             needsAcknowledge
