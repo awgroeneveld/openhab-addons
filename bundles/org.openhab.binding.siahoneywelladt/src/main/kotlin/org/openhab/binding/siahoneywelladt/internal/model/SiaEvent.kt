@@ -11,12 +11,15 @@ class SiaRegularEvent(val eventType: SiaEventType, message: ByteArray, needsAckn
     }
 }
 
-class SiaConfigurationEvent(val eventType: SiaEventType, message: ByteArray, needsAcknowledge: Boolean) :
+abstract class SiaConfigurationEvent(val eventType: SiaEventType, message: ByteArray, needsAcknowledge: Boolean) :
     SiaEvent(message, needsAcknowledge) {
     override fun toString(): String {
         return "SIA Event: ${eventType.name} (${eventType.code}), message: ${message.toString(CHARACTER_SET)}"
     }
 }
+
+class AllAreasReadyStateEvent(eventType: SiaEventType, message: ByteArray, needsAcknowledge: Boolean) :
+    SiaConfigurationEvent(eventType, message, needsAcknowledge)
 
 class SiaWaitForMoreEvent(message: ByteArray, needsAcknowledge: Boolean) : SiaEvent(message, needsAcknowledge)
 class UnhandledSiaEvent(message: ByteArray, needsAcknowledge: Boolean) : SiaEvent(message, needsAcknowledge)

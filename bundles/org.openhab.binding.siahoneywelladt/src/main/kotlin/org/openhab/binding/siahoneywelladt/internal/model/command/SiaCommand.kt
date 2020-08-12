@@ -20,14 +20,20 @@ enum class SiaCommandType(
 }
 
 enum class SiaStateRequestType(
-    val value: String,
+    val code: String,
     val type: SiaCommandSubjectType,
     val function: SiaFunction,
-    val instances: Int = 1
+    val instances: Int = 1,
+    val decoder: SiaStateRequestDecoder = DummyStateRequestDecoder.instance
 ) {
     AREA_ARMED_STATE("SA", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
     ALL_AREAS_ALARM_STATE("SA91", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
-    ALL_AREAS_READY_STATE("SA92", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
+    ALL_AREAS_READY_STATE(
+        "SA92",
+        SiaCommandSubjectType.AREA,
+        SiaFunction.CONTROL,
+        decoder = AllAreasReadyStateDecoder.instance
+    ),
     ZONE_OMIT_STATE("SB", SiaCommandSubjectType.ZONE, SiaFunction.CONTROL),
     ZONE_TECHNICAL_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED),
     ALL_ZONES_READY_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
@@ -37,7 +43,12 @@ enum class SiaStateRequestType(
     ALL_ZONES_RESISTANCE_STATE("ZS40", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
     ALL_ZONES_OMITTED_STATE("ZS50", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
     ALL_ZONES_MASKED_STATE("ZS60", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
-    ALL_ZONES_FAULT_STATE("ZS70", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2)
+    ALL_ZONES_FAULT_STATE("ZS70", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2);
+
+    companion object {
+        private val requestsByCode = values().associateBy { it.code }
+        fun getRequest(code: String) = requestsByCode[code]
+    }
 }
 
 
@@ -60,13 +71,13 @@ abstract class SiaActionCommand(val type: SiaCommandType) : SiaCommand(type.func
 
 abstract class SiaStateRequestCommand(val type: SiaStateRequestType) : SiaCommand(type.function) {
     protected fun createSiaBlock(state: SiaState) =
-        createSiaBlockFromMessage("${type.value}${state}")
+        createSiaBlockFromMessage("${type.code}${state}")
 
     protected fun createSiaBlock(identifier: Int) =
-        createSiaBlockFromMessage("${type.value}${identifier}")
+        createSiaBlockFromMessage("${type.code}${identifier}")
 
     protected fun createSiaBlock() =
-        createSiaBlockFromMessage(type.value)
+        createSiaBlockFromMessage(type.code)
 }
 
 abstract class SiaStateMultiRequestCommand(val type: SiaStateRequestType) : SiaCommand(type.function) {
@@ -77,13 +88,13 @@ abstract class SiaStateMultiRequestCommand(val type: SiaStateRequestType) : SiaC
     private fun instances() = (1..type.instances)
 
     protected fun createSiaBlocks(state: SiaState) =
-        instances().map { createSiaBlockFromMessage("${type.value}$it${state}") }
+        instances().map { createSiaBlockFromMessage("${type.code}$it${state}") }
 
     protected fun createSiaBlocks(identifier: Int) =
-        instances().map { createSiaBlockFromMessage("${type.value}$it${identifier}") }
+        instances().map { createSiaBlockFromMessage("${type.code}$it${identifier}") }
 
     protected fun createSiaBlocks() =
-        instances().map { createSiaBlockFromMessage("${type.value}$it") }
+        instances().map { createSiaBlockFromMessage("${type.code}$it") }
 }
 
 

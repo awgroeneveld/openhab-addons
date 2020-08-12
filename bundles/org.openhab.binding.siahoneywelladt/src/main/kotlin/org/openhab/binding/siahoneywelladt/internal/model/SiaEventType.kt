@@ -184,7 +184,7 @@ enum class SiaEventType(
     CLOSING_FORCED_READY(
         "CW",
         "Force armed",
-        "Header for force armed sesssion, force point msg. may follow",
+        "Header for force armed session, force point msg. may follow",
         AddressField.AREA
     ),
 
@@ -1378,8 +1378,7 @@ enum class SiaEventType(
     );
 
     companion object {
-        private val siaEventTypesByCode = values().map { it.code to it }
-            .toMap()
+        private val siaEventTypesByCode = values().associateBy { it.code }
 
         fun getSiaEvent(code: String) = siaEventTypesByCode[code]
     }

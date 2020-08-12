@@ -2,7 +2,7 @@ package org.openhab.binding.siahoneywelladt.internal.model
 
 import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig.CHARACTER_SET
 
-enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean, text: String) {
+enum class SiaFunction(val code: Int, val needsAcknowledge: Boolean, text: String) {
     END_OF_DATA(0x30, true, "End of data"),
     WAIT(0x31, true, "Wait"),
     ABORT(0x32, true, "Abort"),
@@ -36,10 +36,9 @@ enum class SiaFunction(val value: Int, val needsAcknowledge: Boolean, text: Stri
     VIDEO(0x49, true, "Video");
 
     companion object {
-        private val functionsByCode = values().map { it.value to it }
-            .toMap()
+        private val functionsByCode = values().associateBy { it.code }
 
-        fun getFunction(value: Int): SiaFunction? = functionsByCode[value]
+        fun getFunction(code: Int): SiaFunction? = functionsByCode[code]
     }
 
 
@@ -99,8 +98,10 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
         else message.copyOfRange(0, 2)
             .toString(CHARACTER_SET)
 
+    val messageAsString = message.toString(CHARACTER_SET)
+
     fun checksum(): Byte {
-        var parity = 0xFF xor header.value xor function.value
+        var parity = 0xFF xor header.value xor function.code
         message.forEach { parity = parity xor (it.toInt() and 0xFF) }
         return parity.toByte()
     }
@@ -109,7 +110,7 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
         val size = message.size + blockOverhead
         val result = ByteArray(size)
         result[0] = header.value.toByte()
-        result[1] = function.value.toByte()
+        result[1] = function.code.toByte()
         message.copyInto(result, 2)
         result[size - 1] = checksum()
         return result
@@ -120,8 +121,6 @@ class SiaBlock(val function: SiaFunction, val header: SiaBlockHeader, val messag
     fun getSiaMetaDataType() = eventCode?.let { SiaMetaDataType.getMetaDataType(eventCode) }
 
     fun getTotalLength() = message.size + blockOverhead
-
-    fun getMessageAsString() = message.toString(CHARACTER_SET)
 
     override fun toString(): String {
         return "SIA Block, function: ${function.name}, message: ${message.toString(CHARACTER_SET)}"

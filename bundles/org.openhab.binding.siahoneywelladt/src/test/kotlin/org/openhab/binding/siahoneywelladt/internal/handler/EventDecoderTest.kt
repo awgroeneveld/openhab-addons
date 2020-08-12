@@ -17,7 +17,7 @@ class EventDecoderTest : StringSpec({
             override fun transmit(command: SiaCommand) {
                 logger.info("Transmitting command: $command")
             }
-        })
+        }, configurationEventDecoder = ConfigurationEventDecoder())
         val buffer = ByteArray(255)
         var bytesRead = file.read(buffer)
         while (bytesRead > 0) {
