@@ -9,4 +9,7 @@ data class Zone(val line: Int, val rio: Int, val connection: Int) {
         require(connection in 1..8)
         identifier = 1000 * line + rio * 10 + connection
     }
+
+    override fun toString() =
+        "Zone(line=$line, rio=$rio, connection=$connection, id=$identifier)"
 }

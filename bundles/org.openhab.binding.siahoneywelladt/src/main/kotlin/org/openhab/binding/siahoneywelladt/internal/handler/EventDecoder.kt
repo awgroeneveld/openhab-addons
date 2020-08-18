@@ -10,6 +10,7 @@ import org.openhab.binding.siahoneywelladt.internal.model.SiaEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaEventType
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
 import org.openhab.binding.siahoneywelladt.internal.model.SiaMetaData
+import org.openhab.binding.siahoneywelladt.internal.model.SiaNoMessageEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaRegularEvent
 import org.openhab.binding.siahoneywelladt.internal.model.UnhandledSiaEvent
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestType
@@ -59,8 +60,11 @@ class EventDecoder(
                     commandTransmitter.transmit(RejectCommand.instance)
                 shiftBytes(index, e.moveByteCount)
             }
+            val lastIndexToFunction = indexToFunction
             indexToFunction = findFirstControlCommand()
-            ready = indexToFunction == null || notEnoughBytesInBuffer(indexToFunction.first)
+            ready = indexToFunction == null || indexToFunction == lastIndexToFunction || notEnoughBytesInBuffer(
+                indexToFunction.first
+            )
         }
     }
 
@@ -97,6 +101,7 @@ class EventDecoder(
             this.regularSiaEventDetails.eventType = event.eventType
             this.regularSiaEventDetails.rawMessage = event.message
             return PseudoSiaWaitForMoreEvent(
+                siaBlock.function,
                 siaBlock.message,
                 siaBlock.function.needsAcknowledge,
                 siaBlock.getTotalLength()
@@ -121,6 +126,7 @@ class EventDecoder(
                     .substring(2)
                 this.state = State.HANDLE_REGULAR_EVENT
                 PseudoSiaWaitForMoreEvent(
+                    siaBlock.function,
                     siaBlock.message,
                     siaBlock.function.needsAcknowledge,
                     siaBlock.getTotalLength()
@@ -130,6 +136,7 @@ class EventDecoder(
                 this.siaLevel = getSiaLevelFromConfigurationBlock(siaBlock)
                 this.state = State.HANDLE_CONFIGURATION_EVENT
                 PseudoSiaWaitForMoreEvent(
+                    siaBlock.function,
                     siaBlock.message,
                     siaBlock.function.needsAcknowledge,
                     siaBlock.getTotalLength()
@@ -196,7 +203,7 @@ class EventDecoder(
     private fun notEnoughBytesInBuffer(
         index: Int,
         header: SiaBlockHeader
-    ) = index + header.messageSize + 1 > buffer.size
+    ) = index + header.messageSize + 1 > this.size
 
     private fun findFirstControlCommand(): Pair<Int, SiaFunction>? {
         var function: SiaFunction? = null
@@ -245,6 +252,13 @@ class RegularEventDecoder {
 class ConfigurationEventDecoder {
     private val logger by LoggerDelegate()
     fun decode(siaBlock: SiaBlock, siaLevel: Int): SiaConfigurationEvent? {
+        if (siaBlock.function == SiaFunction.ACKNOWLEDGE)
+            return SiaNoMessageEvent(
+                siaBlock.function,
+                siaBlock.message,
+                siaBlock.needsAcknowledge(),
+                siaBlock.getTotalLength()
+            )
         var requestType = getSiaStateRequestType(siaBlock)
         if (requestType != null) {
             return requestType.decoder.decode(siaBlock)
@@ -253,13 +267,6 @@ class ConfigurationEventDecoder {
         return null
     }
 
-    private fun getSiaStateRequestType(siaBlock: SiaBlock): SiaStateRequestType? {
-        val message = siaBlock.messageAsString
-        var requestType = if (siaBlock.message.size >= 4)
-            SiaStateRequestType.getRequest(message.substring(0, 4))
-        else null
-        if (requestType == null)
-            requestType = SiaStateRequestType.getRequest(message.substring(0, 4))
-        return requestType
-    }
+    private fun getSiaStateRequestType(siaBlock: SiaBlock): SiaStateRequestType? =
+        SiaStateRequestType.getRequestTypeByReturnString(siaBlock.messageAsString)
 }

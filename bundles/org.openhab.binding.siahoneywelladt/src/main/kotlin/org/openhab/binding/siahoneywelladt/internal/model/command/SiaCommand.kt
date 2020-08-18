@@ -24,6 +24,7 @@ enum class SiaStateRequestType(
     val type: SiaCommandSubjectType,
     val function: SiaFunction,
     val instances: Int = 1,
+    val returnStrings: Array<String> = arrayOf(code),
     val decoder: SiaStateRequestDecoder = DummyStateRequestDecoder.instance
 ) {
     AREA_ARMED_STATE("SA", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
@@ -36,7 +37,14 @@ enum class SiaStateRequestType(
     ),
     ZONE_OMIT_STATE("SB", SiaCommandSubjectType.ZONE, SiaFunction.CONTROL),
     ZONE_TECHNICAL_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED),
-    ALL_ZONES_READY_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
+    ALL_ZONES_READY_STATE(
+        "ZS",
+        SiaCommandSubjectType.ZONE,
+        SiaFunction.EXTENDED,
+        2,
+        decoder = AllZonesReadyStateDecoder.instance,
+        returnStrings = arrayOf("ZS1", "ZS2")
+    ),
     ALL_ZONES_ALARM_STATE("ZS10", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
     ALL_ZONES_OPEN_STATE("ZS20", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
     ALL_ZONES_TAMPER_STATE("ZS30", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
@@ -47,7 +55,15 @@ enum class SiaStateRequestType(
 
     companion object {
         private val requestsByCode = values().associateBy { it.code }
+        private val requestsByReturnString =
+            values().flatMap { requestType -> requestType.returnStrings.map { it to requestType } }
+                .toMap()
+
         fun getRequest(code: String) = requestsByCode[code]
+        fun getRequestTypeByReturnString(returnString: String) =
+            requestsByReturnString.entries.sortedByDescending { it.key.length }
+                .firstOrNull { returnString.startsWith(it.key) }?.value
+
     }
 }
 

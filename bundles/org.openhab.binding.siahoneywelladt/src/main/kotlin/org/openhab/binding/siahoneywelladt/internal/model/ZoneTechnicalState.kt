@@ -12,3 +12,5 @@ enum class ZoneTechnicalState(override val siaState: Int) : SiaState {
     FAULT(8)
 }
 
+class ZoneStateAssignment<T : SiaState>(val zone: Zone, val state: T)
+
