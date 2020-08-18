@@ -12,18 +12,11 @@
  */
 package org.openhab.binding.siahoneywelladt.internal;
 
-import static org.openhab.binding.siahoneywelladt.internal.SiaHoneywellAdtBindingConstants.*;
-
-import org.eclipse.jdt.annotation.NonNullByDefault;
-import org.eclipse.jdt.annotation.Nullable;
-import org.eclipse.smarthome.core.thing.ChannelUID;
-import org.eclipse.smarthome.core.thing.Thing;
-import org.eclipse.smarthome.core.thing.ThingStatus;
-import org.eclipse.smarthome.core.thing.binding.BaseThingHandler;
-import org.eclipse.smarthome.core.types.Command;
-import org.eclipse.smarthome.core.types.RefreshType;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.eclipse.jdt.annotation.*;
+import org.eclipse.smarthome.core.thing.*;
+import org.eclipse.smarthome.core.thing.binding.*;
+import org.eclipse.smarthome.core.types.*;
+import org.slf4j.*;
 
 /**
  * The {@link SiaHoneywellAdtHandler} is responsible for handling commands, which are
@@ -44,7 +37,7 @@ public class SiaHoneywellAdtHandler extends BaseThingHandler {
 
     @Override
     public void handleCommand(ChannelUID channelUID, Command command) {
-        if (CHANNEL_1.equals(channelUID.getId())) {
+        //if (CHANNEL_1.equals(channelUID.getId())) {
             if (command instanceof RefreshType) {
                 // TODO: handle data refresh
             }
@@ -54,8 +47,8 @@ public class SiaHoneywellAdtHandler extends BaseThingHandler {
             // Note: if communication with thing fails for some reason,
             // indicate that by setting the status with detail information:
             // updateStatus(ThingStatus.OFFLINE, ThingStatusDetail.COMMUNICATION_ERROR,
-            // "Could not control device at IP address x.x.x.x");
-        }
+        // "Could not control device at IP address x.x.x.x");
+        // }
     }
 
     @Override

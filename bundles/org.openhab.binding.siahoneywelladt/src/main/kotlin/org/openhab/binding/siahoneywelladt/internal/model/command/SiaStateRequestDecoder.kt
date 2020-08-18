@@ -1,6 +1,8 @@
 package org.openhab.binding.siahoneywelladt.internal.model.command
 
+import org.openhab.binding.siahoneywelladt.internal.model.Area
 import org.openhab.binding.siahoneywelladt.internal.model.AreaReadyState
+import org.openhab.binding.siahoneywelladt.internal.model.SiaAreaConfigurationEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.SiaConfigurationEvent
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
@@ -29,20 +31,21 @@ class AllAreasReadyStateDecoder private constructor() : SiaStateRequestDecoder {
         val instance = AllAreasReadyStateDecoder()
     }
 
-    val logger by LoggerDelegate()
     override fun decode(siaBlock: SiaBlock): SiaConfigurationEvent? {
         val areaStates = siaBlock.message
             .drop(5)
             .map { it - '0'.toByte() }
-            .mapIndexed { index, state -> getArea(index) to AreaReadyState.getAreaReadyState(state) }
+            .mapIndexed { index, state -> Area(index + 1) to AreaReadyState.getAreaReadyState(state) }
             .toMap()
-        return null
-    }
 
-    private fun getArea(index: Int): Any {
-        val letter = 'A' + index / 8
-        val nr = index % 8
-        return "$letter$nr"
+
+        return SiaAreaConfigurationEvent(
+            SiaStateRequestType.ALL_AREAS_READY_STATE,
+            areaStates,
+            siaBlock.message,
+            siaBlock.needsAcknowledge(),
+            siaBlock.getTotalLength()
+        )
     }
 
 }

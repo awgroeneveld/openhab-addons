@@ -1,12 +1,16 @@
 package org.openhab.binding.siahoneywelladt.internal.handler
 
 import org.openhab.binding.siahoneywelladt.internal.handler.Constants.EVENT_DECODER_SIZE
+import org.openhab.binding.siahoneywelladt.internal.model.PseudoSiaWaitForMoreEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
+import org.openhab.binding.siahoneywelladt.internal.model.SiaBlockEventDecoder
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlockHeader
 import org.openhab.binding.siahoneywelladt.internal.model.SiaConfigurationEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaEvent
+import org.openhab.binding.siahoneywelladt.internal.model.SiaEventType
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.SiaWaitForMoreEvent
+import org.openhab.binding.siahoneywelladt.internal.model.SiaMetaData
+import org.openhab.binding.siahoneywelladt.internal.model.SiaRegularEvent
 import org.openhab.binding.siahoneywelladt.internal.model.UnhandledSiaEvent
 import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateRequestType
 import org.openhab.binding.siahoneywelladt.internal.model.command.comms.AcknowledgeCommand
@@ -14,13 +18,17 @@ import org.openhab.binding.siahoneywelladt.internal.model.command.comms.RejectCo
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
 
 class RegularSiaEventDetails {
+    var rawMessage: ByteArray? = null
+    var eventType: SiaEventType? = null
+    var metaData: SiaMetaData? = null
     var accountId: String? = null
 }
 
 class EventDecoder(
     private val eventListener: SiaEventListener,
     private val commandTransmitter: SiaCommandTransmitter,
-    private val configurationEventDecoder: ConfigurationEventDecoder
+    private val configurationEventDecoder: ConfigurationEventDecoder,
+    private val regularEventDecoder: RegularEventDecoder
 ) {
     enum class State {
         AWAITING_NEW_EVENT,
@@ -42,7 +50,7 @@ class EventDecoder(
             try {
                 decodeFunction(index, function)?.let {
                     handleEvent(it)
-                    shiftBytes(index, it.message.size + SiaBlock.blockOverhead)
+                    shiftBytes(index, it.size)
                 }
             } catch (e: IllegalSiaCommandException) {
                 logger.error(e.message, e)
@@ -77,42 +85,65 @@ class EventDecoder(
     }
 
     private fun handleRegularEvent(siaBlock: SiaBlock): SiaEvent? {
-        val eventType = siaBlock.getSiaEventType()
-            ?: throw IllegalSiaCommandException(
-                "Could not determine event type from SIA block $siaBlock, code: ${siaBlock.eventCode}",
+        val event = regularEventDecoder.decode(siaBlock, siaLevel)
+        if (siaBlock.function != SiaFunction.ASCII) {
+            if (event == null) return null
+            this.regularSiaEventDetails.metaData = event.metaData
+            this.regularSiaEventDetails.eventType = event.eventType
+            this.regularSiaEventDetails.rawMessage = event.message
+            return PseudoSiaWaitForMoreEvent(
+                siaBlock.message,
+                siaBlock.function.needsAcknowledge,
                 siaBlock.getTotalLength()
             )
-        resetState()
-        return SiaEventFactory.instance.createSiaEvent(
-            eventType,
-            siaBlock.message,
-            siaBlock.function.needsAcknowledge
+        }
+        val result = SiaRegularEvent(
+            regularSiaEventDetails.eventType!!,
+            regularSiaEventDetails.metaData!!,
+            regularSiaEventDetails.rawMessage!!,
+            siaBlock.function.needsAcknowledge,
+            siaBlock.getTotalLength(),
+            siaBlock.messageAsString
         )
+        resetState()
+        return result
     }
 
     private fun handleAwaitEvent(siaBlock: SiaBlock): SiaEvent? {
-        if (siaBlock.function == SiaFunction.CONFIGURATION) {
-            this.siaLevel = getSiaLevelFromConfigurationBlock(siaBlock)
-            this.state = State.HANDLE_CONFIGURATION_EVENT
-            return SiaWaitForMoreEvent(siaBlock.message, siaBlock.function.needsAcknowledge)
+        return when (siaBlock.function) {
+            SiaFunction.ACCOUNT_ID -> {
+                this.regularSiaEventDetails.accountId = siaBlock.messageAsString
+                    .substring(2)
+                this.state = State.HANDLE_REGULAR_EVENT
+                PseudoSiaWaitForMoreEvent(
+                    siaBlock.message,
+                    siaBlock.function.needsAcknowledge,
+                    siaBlock.getTotalLength()
+                )
+            }
+            SiaFunction.CONFIGURATION -> {
+                this.siaLevel = getSiaLevelFromConfigurationBlock(siaBlock)
+                this.state = State.HANDLE_CONFIGURATION_EVENT
+                PseudoSiaWaitForMoreEvent(
+                    siaBlock.message,
+                    siaBlock.function.needsAcknowledge,
+                    siaBlock.getTotalLength()
+                )
+            }
+            else -> throw IllegalArgumentException("Unsupported SIA function ${siaBlock.function} for message ${siaBlock.messageAsString}")
         }
-        if (siaBlock.function == SiaFunction.ACCOUNT_ID) {
-            this.regularSiaEventDetails.accountId = siaBlock.messageAsString
-                .substring(2)
-            this.state = State.HANDLE_REGULAR_EVENT
-            return SiaWaitForMoreEvent(siaBlock.message, siaBlock.function.needsAcknowledge)
-        }
-        return null
     }
 
     private fun handleConfigurationEvent(siaBlock: SiaBlock): SiaEvent? {
-
-        val event: SiaEvent? = UnhandledSiaEvent(siaBlock.message, siaBlock.function.needsAcknowledge)
+        this.state = State.HANDLE_CONFIGURATION_EVENT
+        val event = configurationEventDecoder.decode(siaBlock, siaLevel)
         if (event != null) {
-            this.state = State.HANDLE_CONFIGURATION_EVENT
+            resetState()
+        } else {
+            logger.info("Unhandled configuration message: ${siaBlock.messageAsString}")
+            return UnhandledSiaEvent(siaBlock.message, siaBlock.function.needsAcknowledge, siaBlock.getTotalLength())
         }
-        val result = configurationEventDecoder.decode(siaBlock, siaLevel)
-        resetState()
+
         return event
     }
 
@@ -190,15 +221,30 @@ class EventDecoder(
 
 }
 
+class RegularEventDecoder {
+    private val logger by LoggerDelegate()
+    fun decode(siaBlock: SiaBlock, siaLevel: Int): SiaRegularEvent? {
+        val eventInfo = SiaBlockEventDecoder.instance.getSiaEventCodeAndType(siaBlock) ?: return null
+        if (eventInfo.second == null)
+            throw IllegalArgumentException("Unknown event code: ${eventInfo.first} for $siaBlock")
+        return SiaRegularEvent(
+            eventInfo.second!!,
+            SiaMetaData.fromMessage(siaBlock.messageAsString),
+            siaBlock.message,
+            siaBlock.function.needsAcknowledge,
+            siaBlock.getTotalLength()
+        )
+    }
+}
+
 class ConfigurationEventDecoder {
-    val logger by LoggerDelegate()
+    private val logger by LoggerDelegate()
     fun decode(siaBlock: SiaBlock, siaLevel: Int): SiaConfigurationEvent? {
         var requestType = getSiaStateRequestType(siaBlock)
         if (requestType != null) {
-            requestType.decoder.decode(siaBlock)
+            return requestType.decoder.decode(siaBlock)
         }
-        logger.info("Received response for request: ${requestType?.name}")
-        logger.info("Configuration event ${siaBlock.eventCode} not yet handled.")
+        logger.info("Configuration event ${siaBlock.messageAsString} not yet handled.")
         return null
     }
 

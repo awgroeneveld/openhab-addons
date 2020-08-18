@@ -8,7 +8,7 @@ import org.slf4j.LoggerFactory
 class EventDecoderTest : StringSpec({
     "Area action command should be able to run for all areas" {
         val logger = LoggerFactory.getLogger(EventDecoderTest::class.java)
-        val file = this::class.java.getResourceAsStream("/serialin-1.dat")
+        val file = this::class.java.getResourceAsStream("/serialin-3.bin")
         val eventDecoder = EventDecoder(eventListener = object : SiaEventListener {
             override fun handleEvent(siaEvent: SiaEvent) {
                 logger.info("Handling event: $siaEvent")
@@ -17,7 +17,9 @@ class EventDecoderTest : StringSpec({
             override fun transmit(command: SiaCommand) {
                 logger.info("Transmitting command: $command")
             }
-        }, configurationEventDecoder = ConfigurationEventDecoder())
+        }, configurationEventDecoder = ConfigurationEventDecoder(),
+            regularEventDecoder = RegularEventDecoder()
+        )
         val buffer = ByteArray(255)
         var bytesRead = file.read(buffer)
         while (bytesRead > 0) {
