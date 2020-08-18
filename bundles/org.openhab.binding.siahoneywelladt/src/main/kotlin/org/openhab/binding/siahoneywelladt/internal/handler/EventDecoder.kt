@@ -45,8 +45,9 @@ class EventDecoder(
 
     private fun decodeFunctionsAndReturnLastCorrectEndIndex() {
         var indexToFunction = findFirstControlCommand()
-        while (indexToFunction != null) {
-            val (index, function) = indexToFunction
+        var ready = indexToFunction == null || notEnoughBytesInBuffer(indexToFunction.first)
+        while (!ready) {
+            val (index, function) = indexToFunction!!
             try {
                 decodeFunction(index, function)?.let {
                     handleEvent(it)
@@ -59,8 +60,12 @@ class EventDecoder(
                 shiftBytes(index, e.moveByteCount)
             }
             indexToFunction = findFirstControlCommand()
+            ready = indexToFunction == null || notEnoughBytesInBuffer(indexToFunction.first)
         }
     }
+
+    private fun notEnoughBytesInBuffer(index: Int) =
+        index + SiaBlock.blockOverhead > size
 
     private fun shiftBytes(index: Int, count: Int) {
         val startIndex = index + count
