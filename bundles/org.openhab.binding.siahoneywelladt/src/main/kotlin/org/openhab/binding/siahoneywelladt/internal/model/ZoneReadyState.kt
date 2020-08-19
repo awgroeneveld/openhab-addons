@@ -5,6 +5,6 @@ enum class ZoneReadyState(override val siaState: Int) : SiaState {
 
     companion object {
         private val zoneReadyBySiaState = values().associateBy { it.siaState }
-        fun getZoneReadyState(siaState: Int) = zoneReadyBySiaState[siaState]
+        fun getState(siaState: Int) = zoneReadyBySiaState[siaState]
     }
 }

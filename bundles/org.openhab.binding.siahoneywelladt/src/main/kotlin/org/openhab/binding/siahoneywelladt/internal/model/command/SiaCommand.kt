@@ -1,11 +1,13 @@
 package org.openhab.binding.siahoneywelladt.internal.model.command
 
+import org.openhab.binding.siahoneywelladt.internal.model.AreaAlarmState
 import org.openhab.binding.siahoneywelladt.internal.model.AreaArmedState
 import org.openhab.binding.siahoneywelladt.internal.model.AreaReadyState
 import org.openhab.binding.siahoneywelladt.internal.model.SiaAction
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
 import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
 import org.openhab.binding.siahoneywelladt.internal.model.SiaState
+import org.openhab.binding.siahoneywelladt.internal.model.ZoneReadyState
 
 
 enum class SiaCommandSubjectType {
@@ -32,16 +34,23 @@ enum class SiaStateRequestType(
     ALL_AREAS_ARMED_STATE("SA",
         type = SiaCommandSubjectType.AREA,
         function = SiaFunction.CONTROL,
-        instances = 1,
         decoder = AllAreasStateDecoder<AreaArmedState> { siaValue -> AreaArmedState.getState(siaValue) }),
-    ALL_AREAS_ALARM_STATE("SA91", SiaCommandSubjectType.AREA, SiaFunction.CONTROL),
+    ALL_AREAS_ALARM_STATE(
+        "SA91",
+        SiaCommandSubjectType.AREA,
+        SiaFunction.CONTROL,
+        decoder = AllAreasStateDecoder<AreaAlarmState> { siaValue -> AreaAlarmState.getState(siaValue) }),
     ALL_AREAS_READY_STATE(
         "SA92",
         type = SiaCommandSubjectType.AREA,
         function = SiaFunction.CONTROL,
         decoder = AllAreasStateDecoder<AreaReadyState> { siaValue -> AreaReadyState.getState(siaValue) }
     ),
-    ZONE_OMIT_STATE("SB", SiaCommandSubjectType.ZONE, SiaFunction.CONTROL),
+    ZONE_OMIT_STATE(
+        code = "SB",
+        type = SiaCommandSubjectType.ZONE,
+        function = SiaFunction.CONTROL
+    ),
     ZONE_TECHNICAL_STATE("ZS", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED),
     ALL_ZONES_READY_STATE(
         "ZS",
@@ -49,7 +58,7 @@ enum class SiaStateRequestType(
         function = SiaFunction.EXTENDED,
         instances = 2,
         returnStrings = arrayOf("ZS1*", "ZS2*"),
-        decoder = AllZonesReadyStateDecoder.instance
+        decoder = AllZonesStateDecoder<ZoneReadyState> { siaValue -> ZoneReadyState.getState(siaValue) }
     ),
     ALL_ZONES_ALARM_STATE("ZS10", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
     ALL_ZONES_OPEN_STATE("ZS20", SiaCommandSubjectType.ZONE, SiaFunction.EXTENDED, 2),
@@ -71,6 +80,8 @@ enum class SiaStateRequestType(
                 .firstOrNull { returnString.startsWith(it.key) }?.value
 
     }
+
+    val messageHeaderLength = returnStrings.first().length
 }
 
 abstract class SiaCommand(private val function: SiaFunction) {

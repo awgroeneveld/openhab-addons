@@ -1,5 +1,7 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
+import org.openhab.binding.siahoneywelladt.internal.handler.IllegalSiaCommandException
+
 class SiaBlockEventDecoder private constructor() {
     companion object {
         val instance = SiaBlockEventDecoder()
@@ -20,7 +22,7 @@ class SiaBlockEventDecoder private constructor() {
             SiaEventHandlerType.ASCII -> null
             SiaEventHandlerType.CONFIGURATION -> getConfigurationEventCode(siaBlock)
             SiaEventHandlerType.REGULAR -> getRegularEventCode(siaBlock)
-            else -> throw IllegalArgumentException("Unsupported event type $eventType")
+            else -> throw IllegalSiaCommandException("Unsupported event type $eventType", siaBlock.getTotalLength())
         }
     }
 

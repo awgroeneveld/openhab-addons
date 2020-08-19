@@ -55,6 +55,7 @@ class BufferHandler(
                 if (function.needsAcknowledge)
                     commandTransmitter.transmit(RejectCommand.instance)
                 shiftBytes(index, e.moveByteCount)
+                resetState()
             }
             val lastIndexToFunction = indexToFunction
             indexToFunction = findFirstControlCommand()
@@ -70,6 +71,7 @@ class BufferHandler(
     private fun shiftBytes(index: Int, count: Int) {
         val startIndex = index + count
         buffer.copyInto(buffer, 0, startIndex, size)
+        (size..size + startIndex).forEach { buffer[it] = 0 }
         size -= startIndex
     }
 
@@ -90,70 +92,98 @@ class BufferHandler(
     }
 
     private fun handleRegularEvent(siaBlock: SiaBlock): SiaEvent? {
-        val event = regularEventDecoder.decode(siaBlock, siaLevel)
-        if (siaBlock.function != SiaFunction.ASCII) {
-            if (event == null) return null
-            if (event !is SiaRegularEvent) return event
-            this.regularSiaEventDetails.metaData = event.metaData
-            this.regularSiaEventDetails.eventType = event.eventType
-            this.regularSiaEventDetails.rawMessage = event.message
-            return PseudoSiaWaitForMoreEvent(
-                siaBlock.function,
-                siaBlock.message,
-                siaBlock.function.needsAcknowledge,
-                siaBlock.getTotalLength()
-            )
+        return when (siaBlock.function) {
+            SiaFunction.ASCII -> {
+                val result = SiaRegularEvent(
+                    regularSiaEventDetails.eventType!!,
+                    regularSiaEventDetails.metaData!!,
+                    regularSiaEventDetails.rawMessage!!,
+                    siaBlock.function.needsAcknowledge,
+                    siaBlock.getTotalLength(),
+                    siaBlock.messageAsString
+                )
+                resetState()
+                result
+            }
+            SiaFunction.ACCOUNT_ID -> {
+                handleAccountId(siaBlock)
+            }
+            SiaFunction.CONFIGURATION -> {
+                handleConfiguration(siaBlock)
+            }
+            else -> {
+                val event = regularEventDecoder.decode(siaBlock, siaLevel) ?: return null
+                if (event !is SiaRegularEvent) return event
+                this.regularSiaEventDetails.metaData = event.metaData
+                this.regularSiaEventDetails.eventType = event.eventType
+                this.regularSiaEventDetails.rawMessage = event.message
+                PseudoSiaWaitForMoreEvent(
+                    siaBlock.function,
+                    siaBlock.message,
+                    siaBlock.function.needsAcknowledge,
+                    siaBlock.getTotalLength()
+                )
+            }
         }
-        val result = SiaRegularEvent(
-            regularSiaEventDetails.eventType!!,
-            regularSiaEventDetails.metaData!!,
-            regularSiaEventDetails.rawMessage!!,
-            siaBlock.function.needsAcknowledge,
-            siaBlock.getTotalLength(),
-            siaBlock.messageAsString
-        )
-        resetState()
-        return result
     }
 
     private fun handleAwaitEvent(siaBlock: SiaBlock): SiaEvent? {
         return when (siaBlock.function) {
-            SiaFunction.ACCOUNT_ID -> {
-                this.regularSiaEventDetails.accountId = siaBlock.messageAsString
-                    .substring(2)
-                this.state = State.HANDLE_REGULAR_EVENT
-                PseudoSiaWaitForMoreEvent(
-                    siaBlock.function,
-                    siaBlock.message,
-                    siaBlock.function.needsAcknowledge,
-                    siaBlock.getTotalLength()
-                )
-            }
-            SiaFunction.CONFIGURATION -> {
-                this.siaLevel = getSiaLevelFromConfigurationBlock(siaBlock)
-                this.state = State.HANDLE_CONFIGURATION_EVENT
-                PseudoSiaWaitForMoreEvent(
-                    siaBlock.function,
-                    siaBlock.message,
-                    siaBlock.function.needsAcknowledge,
-                    siaBlock.getTotalLength()
-                )
-            }
+            SiaFunction.ACCOUNT_ID -> handleAccountId(siaBlock)
+            SiaFunction.CONFIGURATION -> handleConfiguration(siaBlock)
             else -> throw IllegalArgumentException("Unsupported SIA function ${siaBlock.function} for message ${siaBlock.messageAsString}")
         }
     }
 
-    private fun handleConfigurationEvent(siaBlock: SiaBlock): SiaEvent? {
+    private fun handleConfiguration(siaBlock: SiaBlock): PseudoSiaWaitForMoreEvent {
+        resetState()
+        this.siaLevel = getSiaLevelFromConfigurationBlock(siaBlock)
         this.state = State.HANDLE_CONFIGURATION_EVENT
-        val event = configurationEventDecoder.decode(siaBlock, siaLevel)
-        if (event != null) {
-            resetState()
-        } else {
-            logger.info("Unhandled configuration message: ${siaBlock.messageAsString}")
-            return UnhandledSiaEvent(siaBlock.message, siaBlock.function.needsAcknowledge, siaBlock.getTotalLength())
-        }
+        return PseudoSiaWaitForMoreEvent(
+            siaBlock.function,
+            siaBlock.message,
+            siaBlock.function.needsAcknowledge,
+            siaBlock.getTotalLength()
+        )
+    }
 
-        return event
+    private fun handleAccountId(siaBlock: SiaBlock): PseudoSiaWaitForMoreEvent {
+        resetState()
+        this.regularSiaEventDetails.accountId = siaBlock.messageAsString
+            .substring(2)
+        this.state = State.HANDLE_REGULAR_EVENT
+        return PseudoSiaWaitForMoreEvent(
+            siaBlock.function,
+            siaBlock.message,
+            siaBlock.function.needsAcknowledge,
+            siaBlock.getTotalLength()
+        )
+    }
+
+    private fun handleConfigurationEvent(siaBlock: SiaBlock): SiaEvent? {
+        return when (siaBlock.function) {
+            SiaFunction.ACCOUNT_ID -> {
+                handleAccountId(siaBlock)
+            }
+            SiaFunction.CONFIGURATION -> {
+                handleConfiguration(siaBlock)
+            }
+            else -> {
+                this.state = State.HANDLE_CONFIGURATION_EVENT
+                val event = configurationEventDecoder.decode(siaBlock, siaLevel)
+                if (event != null) {
+                    resetState()
+                } else {
+                    logger.info("Unhandled configuration message: ${siaBlock.messageAsString}")
+                    return UnhandledSiaEvent(
+                        siaBlock.message,
+                        siaBlock.function.needsAcknowledge,
+                        siaBlock.getTotalLength()
+                    )
+                }
+                event
+            }
+        }
     }
 
     private fun resetState() {
@@ -200,7 +230,7 @@ class BufferHandler(
     private fun notEnoughBytesInBuffer(
         index: Int,
         header: SiaBlockHeader
-    ) = index + header.messageSize + 1 > this.size
+    ) = index + header.messageSize + SiaBlock.blockOverhead > this.size
 
     private fun findFirstControlCommand(): Pair<Int, SiaFunction>? {
         var function: SiaFunction? = null

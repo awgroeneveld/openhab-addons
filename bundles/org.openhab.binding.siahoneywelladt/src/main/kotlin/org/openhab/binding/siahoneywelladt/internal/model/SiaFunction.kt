@@ -1,7 +1,7 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
 enum class SiaEventHandlerType {
-    CONFIGURATION, REGULAR, ASCII, MESSAGELESS, UNKNOWN
+    CONFIGURATION, REGULAR, ASCII, MESSAGELESS, UNKNOWN, ACCOUNT
 }
 
 enum class SiaFunction(val code: Int, val needsAcknowledge: Boolean, text: String, val eventType: SiaEventHandlerType) {
@@ -28,7 +28,7 @@ enum class SiaFunction(val code: Int, val needsAcknowledge: Boolean, text: Strin
     // SPECIAL BLOCKS
     CONFIGURATION(0x40, false, "Configuration", SiaEventHandlerType.CONFIGURATION),
     REMOTE_LOGIN(0x3F, true, "Remote login", SiaEventHandlerType.UNKNOWN),
-    ACCOUNT_ID(0x23, true, "Account ID", SiaEventHandlerType.REGULAR),
+    ACCOUNT_ID(0x23, true, "Account ID", SiaEventHandlerType.ACCOUNT),
     ORIGIN_ID(0x26, true, "Origin ID", SiaEventHandlerType.UNKNOWN),
     ASCII(0x41, true, "ASCII", SiaEventHandlerType.ASCII),
     EXTENDED(0x58, false, "Extended", SiaEventHandlerType.UNKNOWN),
