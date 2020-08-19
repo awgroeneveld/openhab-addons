@@ -9,7 +9,7 @@ class EventDecoderTest : StringSpec({
     "Area action command should be able to run for all areas" {
         val logger = LoggerFactory.getLogger(EventDecoderTest::class.java)
         val file = this::class.java.getResourceAsStream("/serialin-3.bin")
-        val eventDecoder = EventDecoder(eventListener = object : SiaEventListener {
+        val eventDecoder = BufferHandler(eventListener = object : SiaEventListener {
             override fun handleEvent(siaEvent: SiaEvent) {
                 logger.info("Handling event: $siaEvent")
             }

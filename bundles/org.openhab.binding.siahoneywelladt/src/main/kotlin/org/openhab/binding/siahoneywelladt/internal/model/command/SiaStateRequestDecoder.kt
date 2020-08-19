@@ -1,7 +1,6 @@
 package org.openhab.binding.siahoneywelladt.internal.model.command
 
 import org.openhab.binding.siahoneywelladt.internal.model.Area
-import org.openhab.binding.siahoneywelladt.internal.model.AreaReadyState
 import org.openhab.binding.siahoneywelladt.internal.model.Rio
 import org.openhab.binding.siahoneywelladt.internal.model.SiaAreaConfigurationEvent
 import org.openhab.binding.siahoneywelladt.internal.model.SiaBlock
@@ -12,7 +11,7 @@ import org.openhab.binding.siahoneywelladt.internal.model.ZoneReadyState
 import org.openhab.binding.siahoneywelladt.internal.support.LoggerDelegate
 
 interface SiaStateRequestDecoder {
-    fun decode(siaBlock: SiaBlock): SiaConfigurationEvent?
+    fun decode(siaBlock: SiaBlock, siaStateRequestType: SiaStateRequestType): SiaConfigurationEvent?
 }
 
 class DummyStateRequestDecoder private constructor() : SiaStateRequestDecoder {
@@ -22,29 +21,28 @@ class DummyStateRequestDecoder private constructor() : SiaStateRequestDecoder {
         val instance = DummyStateRequestDecoder()
     }
 
-    override fun decode(siaBlock: SiaBlock): SiaConfigurationEvent? {
-        logger.info("Dummy decoder")
+    override fun decode(siaBlock: SiaBlock, siaStateRequestType: SiaStateRequestType): SiaConfigurationEvent? {
+        logger.error("Dummy decoder for sia state request: $siaStateRequestType, message ${siaBlock.messageAsString}")
         return null
     }
 
 
 }
 
-class AllAreasReadyStateDecoder private constructor() : SiaStateRequestDecoder {
-    companion object {
-        val instance = AllAreasReadyStateDecoder()
-    }
 
-    override fun decode(siaBlock: SiaBlock): SiaConfigurationEvent? {
+class AllAreasStateDecoder<X : Enum<*>>(
+    private val toEnum: (Int) -> X?
+) : SiaStateRequestDecoder {
+
+    override fun decode(siaBlock: SiaBlock, siaStateRequestType: SiaStateRequestType): SiaConfigurationEvent? {
         val areaStates = siaBlock.message
-            .drop(5)
+            .drop(siaStateRequestType.returnStrings.first().length)
             .map { it - '0'.toByte() }
-            .mapIndexed { index, state -> Area(index + 1) to AreaReadyState.getAreaReadyState(state) }
+            .mapIndexed { index, state -> Area(index + 1) to toEnum(state) }
             .toMap()
 
-
         return SiaAreaConfigurationEvent(
-            SiaStateRequestType.ALL_AREAS_READY_STATE,
+            siaStateRequestType,
             areaStates,
             siaBlock.message,
             siaBlock.needsAcknowledge(),
@@ -80,8 +78,7 @@ class AllZonesReadyStateDecoder private constructor() : SiaStateRequestDecoder {
             else -> null
         }
 
-
-    override fun decode(siaBlock: SiaBlock): SiaConfigurationEvent? {
+    override fun decode(siaBlock: SiaBlock, siaStateRequestType: SiaStateRequestType): SiaConfigurationEvent? {
         val messageNumber = siaBlock.messageAsString.substring(2, 3)
             .toInt()
         val byteOffset = (messageNumber - 1) * 35

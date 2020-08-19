@@ -7,7 +7,7 @@ import org.openhab.binding.siahoneywelladt.internal.model.command.SiaStateReques
 
 class AreaArmedStateCommand(private val areas: List<Area> = listOf()) :
     SiaStateRequestCommand(
-        SiaStateRequestType.AREA_ARMED_STATE
+        SiaStateRequestType.ALL_AREAS_ARMED_STATE
     ) {
     override fun getSiaBlocks(): List<SiaBlock> {
         return if (areas.isEmpty())

@@ -8,9 +8,9 @@ enum class SiaFunction(val code: Int, val needsAcknowledge: Boolean, text: Strin
     END_OF_DATA(0x30, true, "End of data", SiaEventHandlerType.MESSAGELESS),
     WAIT(0x31, true, "Wait", SiaEventHandlerType.MESSAGELESS),
     ABORT(0x32, true, "Abort", SiaEventHandlerType.MESSAGELESS),
-    RES_3(0x33, true, "Reserved", SiaEventHandlerType.UNKNOWN),
-    RES_4(0x34, true, "Reserved", SiaEventHandlerType.UNKNOWN),
-    RES_5(0x35, true, "Reserved", SiaEventHandlerType.UNKNOWN),
+    RES_3(0x33, true, "Reserved", SiaEventHandlerType.MESSAGELESS),
+    RES_4(0x34, true, "Reserved", SiaEventHandlerType.MESSAGELESS),
+    RES_5(0x35, true, "Reserved", SiaEventHandlerType.MESSAGELESS),
     ACK_AND_STANDBY(0x36, true, "Acknowledge and standby", SiaEventHandlerType.MESSAGELESS),
     ACK_AND_DISCONNECT(0x37, true, "Acknowledge and disconnect", SiaEventHandlerType.MESSAGELESS),
     ACKNOWLEDGE(0x38, false, "Acknowledge", SiaEventHandlerType.MESSAGELESS),
@@ -38,8 +38,9 @@ enum class SiaFunction(val code: Int, val needsAcknowledge: Boolean, text: Strin
     VIDEO(0x49, true, "Video", SiaEventHandlerType.CONFIGURATION);
 
     companion object {
-        private val functionsByCode = values().associateBy { it.code }
+        val messageLessValues = values().filter { it.eventType == SiaEventHandlerType.MESSAGELESS }
 
+        private val functionsByCode = values().associateBy { it.code }
         fun getFunction(code: Int): SiaFunction? = functionsByCode[code]
     }
 

@@ -1,6 +1,6 @@
 package org.openhab.binding.siahoneywelladt.internal.model
 
-enum class AreaReadyState(val siaValue: Int) {
+enum class AreaReadyState(override val siaState: Int) : SiaState {
     UNSET(0),
     SET(1),
     PART_SET(2),
@@ -8,7 +8,8 @@ enum class AreaReadyState(val siaValue: Int) {
     TIME_LOCKED(4);
 
     companion object {
-        private val statesBySiaValue = values().associateBy { it.siaValue }
-        fun getAreaReadyState(siaValue: Int) = statesBySiaValue[siaValue]
+        private val statesBySiaValue = values().associateBy { it.siaState }
+        fun getState(siaValue: Int) = statesBySiaValue[siaValue]
     }
 }
+

@@ -34,7 +34,7 @@ class UnhandledSiaEvent(message: ByteArray, needsAcknowledge: Boolean, size: Int
     SiaEvent(message, needsAcknowledge, size)
 
 class SiaNoMessageEvent(val function: SiaFunction, message: ByteArray, needsAcknowledge: Boolean, size: Int) :
-    SiaConfigurationEvent(message, needsAcknowledge, size) {
+    SiaEvent(message, needsAcknowledge, size) {
     override fun toString(): String {
         return "Function: ${function.name}"
     }
