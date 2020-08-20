@@ -2,10 +2,10 @@ package org.openhab.binding.siahoneywelladt.internal.model.command
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
-import org.openhab.binding.siahoneywelladt.internal.model.Area
-import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.command.state.AreaArmedStateCommand
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SharedConfig
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.Area
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SiaFunction
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.command.state.AreaArmedStateCommand
 
 class AreaArmedStateCommandTest : StringSpec({
 
@@ -25,7 +25,12 @@ class AreaArmedStateCommandTest : StringSpec({
     "Area armed state command should be able to run on single areas" {
         val command=
             AreaArmedStateCommand(
-                listOf(Area('C', 1))
+                listOf(
+                    Area(
+                        'C',
+                        1
+                    )
+                )
             )
         val siaBlocks=command.getSiaBlocks()
         siaBlocks.size shouldBe 1

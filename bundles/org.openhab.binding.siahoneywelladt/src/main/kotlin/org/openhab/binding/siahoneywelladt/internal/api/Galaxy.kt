@@ -1,14 +1,14 @@
 package org.openhab.binding.siahoneywelladt.internal.api
 
-import org.openhab.binding.siahoneywelladt.internal.model.Area
-import org.openhab.binding.siahoneywelladt.internal.model.AreaAction
-import org.openhab.binding.siahoneywelladt.internal.model.AreaAlarmState
-import org.openhab.binding.siahoneywelladt.internal.model.AreaArmedState
-import org.openhab.binding.siahoneywelladt.internal.model.AreaReadyState
-import org.openhab.binding.siahoneywelladt.internal.model.OutputState
-import org.openhab.binding.siahoneywelladt.internal.model.SingleZoneTechnicalState
-import org.openhab.binding.siahoneywelladt.internal.model.Zone
-import org.openhab.binding.siahoneywelladt.internal.model.ZoneArmingState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.Area
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.action.AreaAction
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.AreaAlarmState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.AreaArmedState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.AreaReadyState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.OutputState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.SingleZoneTechnicalState
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.Zone
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.state.ZoneArmingState
 
 
 interface Galaxy {

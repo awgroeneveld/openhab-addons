@@ -48,7 +48,7 @@ public class SiaHoneywellAdtHandlerFactory extends BaseThingHandlerFactory {
         ThingTypeUID thingTypeUID = thing.getThingTypeUID();
 
         if (THING_TYPE_SERIAL_BRIDGE.equals(thingTypeUID)) {
-            return new SiaHoneywellAdtHandler(thing);
+            return new SiaHoneywellAdtSerialBridgeHandler(thing);
         }
 
         throw new IllegalArgumentException("The thing type " + thingTypeUID + " is not supported by the KNX binding.");

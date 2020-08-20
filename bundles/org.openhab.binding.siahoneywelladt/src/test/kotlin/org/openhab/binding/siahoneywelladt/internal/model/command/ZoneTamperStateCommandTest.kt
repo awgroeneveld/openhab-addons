@@ -2,9 +2,9 @@ package org.openhab.binding.siahoneywelladt.internal.model.command
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
-import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.command.state.AllZonesTamperStateCommand
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SharedConfig
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SiaFunction
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.command.state.AllZonesTamperStateCommand
 
 class ZoneTamperStateCommandTest : StringSpec({
 

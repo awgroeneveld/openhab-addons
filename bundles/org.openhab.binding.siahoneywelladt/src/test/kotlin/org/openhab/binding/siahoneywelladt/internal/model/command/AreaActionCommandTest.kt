@@ -2,11 +2,11 @@ package org.openhab.binding.siahoneywelladt.internal.model.command
 
 import io.kotest.core.spec.style.StringSpec
 import io.kotest.matchers.shouldBe
-import org.openhab.binding.siahoneywelladt.internal.handler.SharedConfig
-import org.openhab.binding.siahoneywelladt.internal.model.Area
-import org.openhab.binding.siahoneywelladt.internal.model.AreaAction
-import org.openhab.binding.siahoneywelladt.internal.model.SiaFunction
-import org.openhab.binding.siahoneywelladt.internal.model.command.action.AreaActionCommand
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SharedConfig
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.Area
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.action.AreaAction
+import org.openhab.binding.siahoneywelladt.internal.sia.model.technical.SiaFunction
+import org.openhab.binding.siahoneywelladt.internal.sia.model.functional.command.action.AreaActionCommand
 
 class AreaActionCommandTest : StringSpec({
 
@@ -29,7 +29,12 @@ class AreaActionCommandTest : StringSpec({
         val command=
             AreaActionCommand(
                 AreaAction.SET,
-                listOf(Area('B', 1))
+                listOf(
+                    Area(
+                        'B',
+                        1
+                    )
+                )
             )
         val siaBlocks=command.getSiaBlocks()
         siaBlocks.size shouldBe 1
