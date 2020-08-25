@@ -97,7 +97,7 @@ class SerialCommunicationClient(
 //            sendADCommand(ADCommand.getVersion())
             val inputStream = this.inputStream!!
             var ready = false
-            while (inputStream != null && !ready) {
+            while (!ready) {
                 //TODO: read something
                 val x = inputStream.read()
                 delay(50)

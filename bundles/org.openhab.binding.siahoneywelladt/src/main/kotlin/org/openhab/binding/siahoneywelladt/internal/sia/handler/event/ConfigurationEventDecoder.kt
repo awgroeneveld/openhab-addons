@@ -13,7 +13,7 @@ class ConfigurationEventDecoder : EventDecoder() {
         if (requestType != null) {
             return requestType.decoder.decode(siaBlock, requestType)
         }
-        logger.info("Configuration event ${siaBlock.messageAsString} not yet handled.")
+        logger.info("Configuration event {} not yet handled.",siaBlock.messageAsString )
         return null
     }
 

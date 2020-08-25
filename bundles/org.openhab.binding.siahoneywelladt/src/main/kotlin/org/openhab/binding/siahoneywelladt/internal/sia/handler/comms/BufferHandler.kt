@@ -49,7 +49,7 @@ class BufferHandler(
                     shiftBytes(index, it.size)
                 }
             } catch (e: IllegalSiaCommandException) {
-                logger.error(e.message, e)
+                logger.error("Illegal SIA Exception {}.",e.message, e)
                 if (function.needsAcknowledge)
                     commandTransmitter.transmit(RejectCommand.instance)
                 shiftBytes(index, e.moveByteCount)
@@ -176,7 +176,7 @@ class BufferHandler(
                 if (event != null) {
                     resetState()
                 } else {
-                    logger.info("Unhandled configuration message: ${siaBlock.messageAsString}")
+                    logger.info("Unhandled configuration message: {}",siaBlock.messageAsString)
                     return UnhandledSiaEvent(
                         siaBlock.message,
                         siaBlock.function.needsAcknowledge,
@@ -257,7 +257,7 @@ class BufferHandler(
         if (bytesRead == 0)
             return
         if (size + bytesRead > buffer.size) {
-            logger.error("Buffer overrun, dropping old buffer of size $size.")
+            logger.error("Buffer overrun, dropping old buffer of size {}.",size)
             size = 0
         }
         newBytes.copyInto(buffer, size, 0, bytesRead)

@@ -15,7 +15,7 @@ class DummyStateRequestDecoder private constructor() :
     }
 
     override fun decode(siaBlock: SiaBlock, siaStateRequestType: SiaStateRequestType): SiaConfigurationEvent? {
-        logger.error("Dummy decoder for sia state request: $siaStateRequestType, message ${siaBlock.messageAsString}")
+        logger.error("Dummy decoder for sia state request: {}, message {}.", siaStateRequestType, siaBlock.messageAsString)
         return null
     }
 }
