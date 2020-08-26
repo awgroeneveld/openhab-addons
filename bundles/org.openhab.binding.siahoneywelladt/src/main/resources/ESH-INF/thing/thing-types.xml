@@ -51,35 +51,31 @@
 			<bridge-type-ref id="serialbridge"/>
 		</supported-bridge-type-refs>
 
-		<label>Area</label>
-		<description>Represents a controllable area within a Honeywell/DSC Alarm System.</description>
+		<label>Honeywell/ADT Area</label>
+		<description>Represents a controllable area within a Honeywell/ADT Alarm System.</description>
 
 		<channels>
-			<channel id="status" typeId="message">
-				<label>Partition Status</label>
-				<description>Partition Status</description>
+			<channel id="message" typeId="message">
+				<label>Area Message</label>
+				<description>Last message sent for this area.</description>
 			</channel>
-			<channel id="arm_mode" typeId="arm_mode">
-				<label>Partition Arm Mode</label>
-				<description>Partition Arm Mode</description>
+			<channel id="armState" typeId="armState">
+				<label>Area armed State</label>
+				<description>Area armed State (Armed, Partially Armed, Unarmed).</description>
 			</channel>
 			<channel id="armed" typeId="status">
-				<label>Partition Armed Status</label>
-				<description>Partition Armed Status (ON=Armed, OFF=Disarmed)</description>
+				<label>Area armed Status</label>
+				<description>Area armed status (ON=Armed, OFF=Disarmed).</description>
 			</channel>
-			<channel id="entry_delay" typeId="status">
-				<label>Partition Entry Delay</label>
-				<description>Partition In Entry Delay Mode</description>
+			<channel id="inAlarm" typeId="status">
+				<label>Area in Alarm</label>
+				<description>Area in Alarm</description>
 			</channel>
-			<channel id="exit_delay" typeId="status">
-				<label>Partition Exit Delay</label>
-				<description>Partition In Exit Delay Mode</description>
+			<channel id="alarmState" typeId="alarmState">
+				<label>Alarm State</label>
+				<description>Alarm state (NORMAL, IN_ALARM, RESET_REQUIRED)</description>
 			</channel>
-			<channel id="in_alarm" typeId="status">
-				<label>Partition in Alarm</label>
-				<description>Partition In Alarm</description>
-			</channel>
-			<channel id="opening_closing_mode" typeId="message">
+			<channel id="openingClosingMode" typeId="message">
 				<label>Partition Opening/Closing Mode</label>
 				<description>Partition Opening/Closing Mode ("User Closing", "Special Closing", "Partial Closing", "User
 					Opening",
@@ -92,7 +88,7 @@
 			<parameter name="letter" type="text" required="true" pattern="[A-D]">
 				<label>Area Letter</label>
 				<description>The Area Letter Indicator (A-D).</description>
-				<default>1</default>
+				<default>A</default>
 			</parameter>
 			<parameter name="number" type="integer" required="true" min="1" max="8">
 				<label>Area Number</label>
@@ -119,11 +115,11 @@
 				<label>Zone Message</label>
 				<description>Zone Message</description>
 			</channel>
-			<channel id="bypass_mode" typeId="bypassMode">
+			<channel id="bypassMode" typeId="zoneBypassMode">
 				<label>Zone Bypass Mode</label>
 				<description>Zone Bypass Mode (OFF=Armed, ON=Bypassed)</description>
 			</channel>
-			<channel id="in_alarm" typeId="status">
+			<channel id="inAlarm" typeId="status">
 				<label>Zone in Alarm</label>
 				<description>Zone In Alarm</description>
 			</channel>
@@ -135,9 +131,13 @@
 				<label>Zone Fault</label>
 				<description>Zone Fault</description>
 			</channel>
-			<channel id="tripped" typeId="status">
-				<label>Zone Tripped</label>
-				<description>Zone Tripped</description>
+			<channel id="masked" typeId="status">
+				<label>Zone Masked</label>
+				<description>Zone Masked</description>
+			</channel>
+			<channel id="detailedStatus" typeId="zoneDetailedStatus">
+				<label>Zone Detailed Status</label>
+				<description>Zone detailed status (TAMPER_SC, TAMPER_OC, TAMPER_CV, LOW_RESISTANCE, HIGH_RESISTANCE, CLOSED, OPEN, MASKED, FAULT)</description>
 			</channel>
 		</channels>
 
@@ -152,66 +152,32 @@
 				<description>The Area Number (1-8).</description>
 				<default>1</default>
 			</parameter>
-			<parameter name="rioLine" type="integer" required="true" min="1" max="4">
+			<parameter name="rioLineNumber" type="integer" required="true" min="1" max="4">
 				<label>Rio Line #</label>
 				<description>The Line Number the Rio is connected to (1-4)</description>
 			</parameter>
-			<parameter name="rioNr" type="integer" required="true" min="0" max="15">
-				<label>Rio Line #</label>
-				<description>The Line Number the Rio is connected to (1-4)</description>
+			<parameter name="rioNumber" type="integer" required="true" min="0" max="15">
+				<label>Rio Number</label>
+				<description>The RIO number in the line (0-15)</description>
 			</parameter>
 			<parameter name="zoneNumber" type="integer" required="true" min="1" max="8">
 				<label>Zone Number</label>
 				<description>The Zone Number (1-8).</description>
 			</parameter>
+			<parameter name="type" type="text">
+				<label>Zone type</label>
+				<description>Specific type of input zone</description>
+				<limitToOptions>true</limitToOptions>
+				<options>
+					<option value="CONTACT">Contact</option>
+					<option value="PIR">PIR sensor</option>
+					<option value="SMOKE">Smoke sensor</option>
+				</options>
+
+			</parameter>
 
 		</config-description>
 	</thing-type>
-
-	<!-- bridge -->
-	<channel-type id="reset">
-		<item-type>Switch</item-type>
-		<label>Reset</label>
-		<description>Reset Switch</description>
-	</channel-type>
-
-	<channel-type id="command">
-		<item-type>String</item-type>
-		<label>Send Command</label>
-		<description>Sends a DSC Alarm Command</description>
-	</channel-type>
-
-
-	<!-- partition -->
-	<channel-type id="armMode">
-		<item-type>Number</item-type>
-		<label>Arm Mode</label>
-		<description>Arm Mode</description>
-		<state pattern="%d">
-			<options>
-				<option value="0">Disarm</option>
-				<option value="1">Away</option>
-				<option value="2">Stay</option>
-				<option value="3">Force</option>
-			</options>
-		</state>
-	</channel-type>
-
-	<!-- zone -->
-	<channel-type id="zoneStatus">
-		<item-type>Contact</item-type>
-		<label>Zone Status</label>
-		<description>Zone Status (Open/Closed)</description>
-		<state readOnly="true">
-
-		</state>
-	</channel-type>
-
-	<channel-type id="bypassMode">
-		<item-type>Switch</item-type>
-		<label>Bypass Mode</label>
-		<description>Bypass Mode (OFF=Armed, ON=Bypassed)</description>
-	</channel-type>
 
 	<!-- common -->
 	<channel-type id="message">
@@ -220,6 +186,106 @@
 		<description>Message Received</description>
 		<state pattern="%s" readOnly="true"/>
 	</channel-type>
+
+	<!-- area -->
+	<channel-type id="armState">
+		<item-type>String</item-type>
+		<label>Arm State</label>
+		<description>Arm State</description>
+		<state pattern="%d" readOnly="true">
+			<options>
+				<option value="UNARMED">Unarmed</option>
+				<option value="ARMED">Armed</option>
+				<option value="PARTIALLY_ARMED">Partially Armed</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<channel-type id="alarmState">
+		<item-type>String</item-type>
+		<label>Arm State</label>
+		<description>Arm State</description>
+		<state pattern="%d" readOnly="true">
+			<options>
+				<option value="NORMAL">Normal</option>
+				<option value="IN_ALARM">In Alarm</option>
+				<option value="RESET_REQUIRED">Reset Required</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<!--	 zone -->
+	<channel-type id="zoneStatus">
+		<item-type>Contact</item-type>
+		<label>Zone Status</label>
+		<description>Zone Status (Open/Closed)</description>
+		<state readOnly="true"/>
+	</channel-type>
+
+	<channel-type id="zoneBypassMode">
+		<item-type>Switch</item-type>
+		<label>Bypass Mode</label>
+		<description>Bypass Mode (OFF=Armed, ON=Bypassed)</description>
+	</channel-type>
+
+	<channel-type id="zoneDetailedStatus">
+		<item-type>String</item-type>
+		<label>Zone Detail State</label>
+		<description>Zone Detail State</description>
+		<state pattern="%d" readOnly="true">
+			<options>
+				<option value="TAMPER_SC">Tamper SC</option>
+				<option value="TAMPER_OC">Tamper OC</option>
+				<option value="TAMPER_CV">Tamper CV</option>
+				<option value="RESISTANCE_LOW">Low Resistance</option>
+				<option value="RESISTANCE_HIGH">High Resistance</option>
+				<option value="CLOSED">Closed</option>
+				<option value="OPEN">Open</option>
+				<option value="MASKED">Masked</option>
+				<option value="FAULT">Fault</option>
+			</options>
+		</state>
+	</channel-type>
+
+	<!-- bridge -->
+	<!--	<channel-type id="reset">-->
+	<!--		<item-type>Switch</item-type>-->
+	<!--		<label>Reset</label>-->
+	<!--		<description>Reset Switch</description>-->
+	<!--	</channel-type>-->
+
+	<!--	<channel-type id="command">-->
+	<!--		<item-type>String</item-type>-->
+	<!--		<label>Send Command</label>-->
+	<!--		<description>Sends a DSC Alarm Command</description>-->
+	<!--	</channel-type>-->
+
+
+	<!-- partition -->
+	<!--	<channel-type id="armMode">-->
+	<!--		<item-type>Number</item-type>-->
+	<!--		<label>Arm Mode</label>-->
+	<!--		<description>Arm Mode</description>-->
+	<!--		<state pattern="%d">-->
+	<!--			<options>-->
+	<!--				<option value="0">Disarm</option>-->
+	<!--				<option value="1">Away</option>-->
+	<!--				<option value="2">Stay</option>-->
+	<!--				<option value="3">Force</option>-->
+	<!--			</options>-->
+	<!--		</state>-->
+	<!--	</channel-type>-->
+
+	<!-- zone -->
+	<!--	<channel-type id="zoneStatus">-->
+	<!--		<item-type>Contact</item-type>-->
+	<!--		<label>Zone Status</label>-->
+	<!--		<description>Zone Status (Open/Closed)</description>-->
+	<!--		<state readOnly="true">-->
+
+	<!--		</state>-->
+	<!--	</channel-type>-->
+
 
 	<channel-type id="status">
 		<item-type>Switch</item-type>

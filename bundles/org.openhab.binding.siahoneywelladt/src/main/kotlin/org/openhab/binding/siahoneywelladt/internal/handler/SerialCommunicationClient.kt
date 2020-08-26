@@ -63,7 +63,7 @@ class SerialCommunicationClient(
 
     fun disconnect() {
         logger.trace("Disconnecting")
-        this.readerJob!!.cancel()
+        this.readerJob?.cancel()
         if (this.serialPort != null) {
             logger.trace("Closing serial port")
             this.serialPort!!.close()

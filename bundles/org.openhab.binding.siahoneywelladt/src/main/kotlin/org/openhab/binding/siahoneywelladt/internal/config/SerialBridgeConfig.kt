@@ -30,7 +30,7 @@ class SerialBridgeConfig {
             throwInvalidConfiguration("no serial port configured")
 
         if (!isValidBitRate())
-            throwInvalidConfiguration("bit rate is not valid")
+            throwInvalidConfiguration("bit rate is not valid, valid values are: ${allowedBitRates.joinToString(",")}")
 
         if (!isValidPassword()) {
             throwInvalidConfiguration("password not set")
